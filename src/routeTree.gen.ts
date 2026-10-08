@@ -19,11 +19,15 @@ import { Route as AuthenticatedParentRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedStudentRouteImport } from './routes/_authenticated/student'
 import { Route as AuthenticatedTeacherRouteImport } from './routes/_authenticated/teacher'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
+import { Route as AuthenticatedAdminAcademicYearsRouteImport } from './routes/_authenticated/admin.academic-years'
 import { Route as AuthenticatedAdminAuditRouteImport } from './routes/_authenticated/admin.audit'
+import { Route as AuthenticatedAdminClassesRouteImport } from './routes/_authenticated/admin.classes'
 import { Route as AuthenticatedAdminEventsRouteImport } from './routes/_authenticated/admin.events'
 import { Route as AuthenticatedAdminFeesRouteImport } from './routes/_authenticated/admin.fees'
 import { Route as AuthenticatedAdminNewsRouteImport } from './routes/_authenticated/admin.news'
+import { Route as AuthenticatedAdminSchoolsRouteImport } from './routes/_authenticated/admin.schools'
 import { Route as AuthenticatedAdminSubjectsRouteImport } from './routes/_authenticated/admin.subjects'
+import { Route as AuthenticatedAdminTermsRouteImport } from './routes/_authenticated/admin.terms'
 import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated/admin.users'
 import { Route as AuthenticatedParentIndexRouteImport } from './routes/_authenticated/parent.index'
 import { Route as AuthenticatedParentAnnouncementsRouteImport } from './routes/_authenticated/parent.announcements'
@@ -95,11 +99,23 @@ const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedAdminRoute,
 } as any)
+const AuthenticatedAdminAcademicYearsRoute =
+  AuthenticatedAdminAcademicYearsRouteImport.update({
+    id: '/academic-years',
+    path: '/academic-years',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminAuditRoute = AuthenticatedAdminAuditRouteImport.update({
   id: '/audit',
   path: '/audit',
   getParentRoute: () => AuthenticatedAdminRoute,
 } as any)
+const AuthenticatedAdminClassesRoute =
+  AuthenticatedAdminClassesRouteImport.update({
+    id: '/classes',
+    path: '/classes',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminEventsRoute =
   AuthenticatedAdminEventsRouteImport.update({
     id: '/events',
@@ -116,12 +132,23 @@ const AuthenticatedAdminNewsRoute = AuthenticatedAdminNewsRouteImport.update({
   path: '/news',
   getParentRoute: () => AuthenticatedAdminRoute,
 } as any)
+const AuthenticatedAdminSchoolsRoute =
+  AuthenticatedAdminSchoolsRouteImport.update({
+    id: '/schools',
+    path: '/schools',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminSubjectsRoute =
   AuthenticatedAdminSubjectsRouteImport.update({
     id: '/subjects',
     path: '/subjects',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminTermsRoute = AuthenticatedAdminTermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => AuthenticatedAdminRoute,
+} as any)
 const AuthenticatedAdminUsersRoute = AuthenticatedAdminUsersRouteImport.update({
   id: '/users',
   path: '/users',
@@ -256,11 +283,15 @@ export interface FileRoutesByFullPath {
   '/parent': typeof AuthenticatedParentRouteWithChildren
   '/student': typeof AuthenticatedStudentRouteWithChildren
   '/teacher': typeof AuthenticatedTeacherRouteWithChildren
+  '/admin/academic-years': typeof AuthenticatedAdminAcademicYearsRoute
   '/admin/audit': typeof AuthenticatedAdminAuditRoute
+  '/admin/classes': typeof AuthenticatedAdminClassesRoute
   '/admin/events': typeof AuthenticatedAdminEventsRoute
   '/admin/fees': typeof AuthenticatedAdminFeesRoute
   '/admin/news': typeof AuthenticatedAdminNewsRoute
+  '/admin/schools': typeof AuthenticatedAdminSchoolsRoute
   '/admin/subjects': typeof AuthenticatedAdminSubjectsRoute
+  '/admin/terms': typeof AuthenticatedAdminTermsRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/parent/announcements': typeof AuthenticatedParentAnnouncementsRoute
   '/parent/children': typeof AuthenticatedParentChildrenRouteWithChildren
@@ -289,11 +320,15 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/messages': typeof AuthenticatedMessagesRoute
   '/news': typeof AuthenticatedNewsRoute
+  '/admin/academic-years': typeof AuthenticatedAdminAcademicYearsRoute
   '/admin/audit': typeof AuthenticatedAdminAuditRoute
+  '/admin/classes': typeof AuthenticatedAdminClassesRoute
   '/admin/events': typeof AuthenticatedAdminEventsRoute
   '/admin/fees': typeof AuthenticatedAdminFeesRoute
   '/admin/news': typeof AuthenticatedAdminNewsRoute
+  '/admin/schools': typeof AuthenticatedAdminSchoolsRoute
   '/admin/subjects': typeof AuthenticatedAdminSubjectsRoute
+  '/admin/terms': typeof AuthenticatedAdminTermsRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/parent/announcements': typeof AuthenticatedParentAnnouncementsRoute
   '/parent/children': typeof AuthenticatedParentChildrenRouteWithChildren
@@ -328,11 +363,15 @@ export interface FileRoutesById {
   '/_authenticated/parent': typeof AuthenticatedParentRouteWithChildren
   '/_authenticated/student': typeof AuthenticatedStudentRouteWithChildren
   '/_authenticated/teacher': typeof AuthenticatedTeacherRouteWithChildren
+  '/_authenticated/admin/academic-years': typeof AuthenticatedAdminAcademicYearsRoute
   '/_authenticated/admin/audit': typeof AuthenticatedAdminAuditRoute
+  '/_authenticated/admin/classes': typeof AuthenticatedAdminClassesRoute
   '/_authenticated/admin/events': typeof AuthenticatedAdminEventsRoute
   '/_authenticated/admin/fees': typeof AuthenticatedAdminFeesRoute
   '/_authenticated/admin/news': typeof AuthenticatedAdminNewsRoute
+  '/_authenticated/admin/schools': typeof AuthenticatedAdminSchoolsRoute
   '/_authenticated/admin/subjects': typeof AuthenticatedAdminSubjectsRoute
+  '/_authenticated/admin/terms': typeof AuthenticatedAdminTermsRoute
   '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
   '/_authenticated/parent/announcements': typeof AuthenticatedParentAnnouncementsRoute
   '/_authenticated/parent/children': typeof AuthenticatedParentChildrenRouteWithChildren
@@ -367,11 +406,15 @@ export interface FileRouteTypes {
     | '/parent'
     | '/student'
     | '/teacher'
+    | '/admin/academic-years'
     | '/admin/audit'
+    | '/admin/classes'
     | '/admin/events'
     | '/admin/fees'
     | '/admin/news'
+    | '/admin/schools'
     | '/admin/subjects'
+    | '/admin/terms'
     | '/admin/users'
     | '/parent/announcements'
     | '/parent/children'
@@ -400,11 +443,15 @@ export interface FileRouteTypes {
     | '/auth'
     | '/messages'
     | '/news'
+    | '/admin/academic-years'
     | '/admin/audit'
+    | '/admin/classes'
     | '/admin/events'
     | '/admin/fees'
     | '/admin/news'
+    | '/admin/schools'
     | '/admin/subjects'
+    | '/admin/terms'
     | '/admin/users'
     | '/parent/announcements'
     | '/parent/children'
@@ -438,11 +485,15 @@ export interface FileRouteTypes {
     | '/_authenticated/parent'
     | '/_authenticated/student'
     | '/_authenticated/teacher'
+    | '/_authenticated/admin/academic-years'
     | '/_authenticated/admin/audit'
+    | '/_authenticated/admin/classes'
     | '/_authenticated/admin/events'
     | '/_authenticated/admin/fees'
     | '/_authenticated/admin/news'
+    | '/_authenticated/admin/schools'
     | '/_authenticated/admin/subjects'
+    | '/_authenticated/admin/terms'
     | '/_authenticated/admin/users'
     | '/_authenticated/parent/announcements'
     | '/_authenticated/parent/children'
@@ -545,11 +596,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/academic-years': {
+      id: '/_authenticated/admin/academic-years'
+      path: '/academic-years'
+      fullPath: '/admin/academic-years'
+      preLoaderRoute: typeof AuthenticatedAdminAcademicYearsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/audit': {
       id: '/_authenticated/admin/audit'
       path: '/audit'
       fullPath: '/admin/audit'
       preLoaderRoute: typeof AuthenticatedAdminAuditRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/classes': {
+      id: '/_authenticated/admin/classes'
+      path: '/classes'
+      fullPath: '/admin/classes'
+      preLoaderRoute: typeof AuthenticatedAdminClassesRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
     '/_authenticated/admin/events': {
@@ -573,11 +638,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminNewsRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/schools': {
+      id: '/_authenticated/admin/schools'
+      path: '/schools'
+      fullPath: '/admin/schools'
+      preLoaderRoute: typeof AuthenticatedAdminSchoolsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/subjects': {
       id: '/_authenticated/admin/subjects'
       path: '/subjects'
       fullPath: '/admin/subjects'
       preLoaderRoute: typeof AuthenticatedAdminSubjectsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/terms': {
+      id: '/_authenticated/admin/terms'
+      path: '/terms'
+      fullPath: '/admin/terms'
+      preLoaderRoute: typeof AuthenticatedAdminTermsRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
     '/_authenticated/admin/users': {
@@ -731,21 +810,29 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedAdminRouteChildren {
+  AuthenticatedAdminAcademicYearsRoute: typeof AuthenticatedAdminAcademicYearsRoute
   AuthenticatedAdminAuditRoute: typeof AuthenticatedAdminAuditRoute
+  AuthenticatedAdminClassesRoute: typeof AuthenticatedAdminClassesRoute
   AuthenticatedAdminEventsRoute: typeof AuthenticatedAdminEventsRoute
   AuthenticatedAdminFeesRoute: typeof AuthenticatedAdminFeesRoute
   AuthenticatedAdminNewsRoute: typeof AuthenticatedAdminNewsRoute
+  AuthenticatedAdminSchoolsRoute: typeof AuthenticatedAdminSchoolsRoute
   AuthenticatedAdminSubjectsRoute: typeof AuthenticatedAdminSubjectsRoute
+  AuthenticatedAdminTermsRoute: typeof AuthenticatedAdminTermsRoute
   AuthenticatedAdminUsersRoute: typeof AuthenticatedAdminUsersRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
 }
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
+  AuthenticatedAdminAcademicYearsRoute: AuthenticatedAdminAcademicYearsRoute,
   AuthenticatedAdminAuditRoute: AuthenticatedAdminAuditRoute,
+  AuthenticatedAdminClassesRoute: AuthenticatedAdminClassesRoute,
   AuthenticatedAdminEventsRoute: AuthenticatedAdminEventsRoute,
   AuthenticatedAdminFeesRoute: AuthenticatedAdminFeesRoute,
   AuthenticatedAdminNewsRoute: AuthenticatedAdminNewsRoute,
+  AuthenticatedAdminSchoolsRoute: AuthenticatedAdminSchoolsRoute,
   AuthenticatedAdminSubjectsRoute: AuthenticatedAdminSubjectsRoute,
+  AuthenticatedAdminTermsRoute: AuthenticatedAdminTermsRoute,
   AuthenticatedAdminUsersRoute: AuthenticatedAdminUsersRoute,
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
 }

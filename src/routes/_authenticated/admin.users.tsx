@@ -11,11 +11,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { PortalShell } from "../_authenticated";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth, type AppRole } from "@/lib/auth";
-import { Trash2 } from "lucide-react";
+import { createManagedUser } from "@/lib/admin-users";
+import { Trash2, Plus } from "lucide-react";
 
 import { RoleGuard } from "@/components/RoleGuard";
 
@@ -33,12 +43,21 @@ function AdminUsers() {
   const { user: currentUser } = useAuth();
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [qualifications, setQualifications] = useState("");
+  const [role, setRole] = useState<AppRole>("student");
 
   const { data: users = [], isLoading } = useQuery({
     queryKey: ["admin-users"],
     queryFn: async () => {
       const [{ data: profs }, { data: roles }] = await Promise.all([
-        supabase.from("profiles").select("id, full_name, created_at").order("created_at", { ascending: false }),
+        supabase
+          .from("profiles")
+          .select("id, full_name, parent_code, student_code, teacher_qualifications, created_at")
+          .order("created_at", { ascending: false }),
         supabase.from("user_roles").select("user_id, role"),
       ]);
       const roleMap = new Map((roles ?? []).map((r) => [r.user_id, r.role as AppRole]));
@@ -80,15 +99,92 @@ function AdminUsers() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const createUser = useMutation({
+    mutationFn: async () => {
+      if (!name.trim() || !email.trim() || !password.trim()) throw new Error("All fields required");
+      if (password.length < 6) throw new Error("Password must be at least 6 characters");
+      await createManagedUser({
+        data: {
+          email: email.trim(),
+          password: password.trim(),
+          fullName: name.trim(),
+          role: role as "student" | "teacher" | "parent",
+          qualifications: qualifications.trim() || undefined,
+        },
+      });
+    },
+    onSuccess: () => {
+      toast.success("User created");
+      setName(""); setEmail(""); setPassword(""); setQualifications(""); setRole("student"); setOpen(false);
+      qc.invalidateQueries({ queryKey: ["admin-users"] });
+      qc.invalidateQueries({ queryKey: ["admin-stats"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   return (
-    <PortalShell title="User management" subtitle="Search users and change their roles.">
-      <Card className="p-4 mb-4">
-        <Input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search by name…"
-        />
-      </Card>
+    <PortalShell title="User management" subtitle="Create accounts, search users, and change roles.">
+      <div className="mb-4 flex flex-wrap gap-2">
+        <Card className="p-4 flex-1 min-w-[200px]">
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by name…"
+          />
+        </Card>
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="h-4 w-4 mr-1" /> Create account
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Create account</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <Label>Full name</Label>
+                <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Student name" />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Email</Label>
+                <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="student@school.com" />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Password</Label>
+                <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Min 6 characters" />
+              </div>
+              {role === "teacher" && (
+                <div className="space-y-1.5">
+                  <Label>Qualifications</Label>
+                  <Input value={qualifications} onChange={(e) => setQualifications(e.target.value)} placeholder="Subjects, grades, or certifications" />
+                </div>
+              )}
+              <div className="space-y-1.5">
+                <Label>Role</Label>
+                <Select value={role} onValueChange={(v) => setRole(v as AppRole)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ROLES.filter((r) => r !== "admin").map((r) => (
+                      <SelectItem key={r} value={r} className="capitalize">{r}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
+              <Button onClick={() => createUser.mutate()} disabled={createUser.isPending}>
+                {createUser.isPending ? "Creating…" : "Create account"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+
       <Card className="p-0 overflow-hidden">
         {isLoading ? (
           <p className="p-6 text-sm text-muted-foreground">Loading…</p>
@@ -101,6 +197,15 @@ function AdminUsers() {
                 <div className="min-w-0">
                   <div className="font-medium truncate">{u.full_name || "Unnamed"}</div>
                   <div className="text-xs text-muted-foreground font-mono">{u.id.slice(0, 8)}…</div>
+                  {u.role === "student" && u.student_code && (
+                    <div className="text-xs text-muted-foreground">Student code: <span className="font-mono font-semibold">{u.student_code}</span></div>
+                  )}
+                  {u.role === "parent" && u.parent_code && (
+                    <div className="text-xs text-muted-foreground">Parent code: <span className="font-mono font-semibold">{u.parent_code}</span></div>
+                  )}
+                  {u.role === "teacher" && u.teacher_qualifications && (
+                    <div className="text-xs text-muted-foreground">Qualifications: {u.teacher_qualifications}</div>
+                  )}
                 </div>
                 <div className="flex items-center gap-2">
                   <Select

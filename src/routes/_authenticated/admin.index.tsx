@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PortalShell } from "../_authenticated";
 import { supabase } from "@/integrations/supabase/client";
-import { Users, BookOpen, MessagesSquare, GraduationCap, ScrollText, Newspaper, Wallet, Plus, CalendarClock, Megaphone, FileText } from "lucide-react";
+import { Users, BookOpen, MessagesSquare, GraduationCap, ScrollText, Newspaper, Wallet, Plus, CalendarClock, Megaphone, FileText, School, Layers } from "lucide-react";
 import { RoleGuard } from "@/components/RoleGuard";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
@@ -19,9 +19,11 @@ function AdminDashboard() {
   const { data: stats, isLoading } = useQuery({
     queryKey: ["admin-stats"],
     queryFn: async () => {
-      const [users, classes, announcements, enrollments, roles, assignments, events, fees] = await Promise.all([
+      const [users, classes, schools, academicYears, announcements, enrollments, roles, assignments, events, fees] = await Promise.all([
         supabase.from("profiles").select("id", { count: "exact", head: true }),
         supabase.from("classes").select("id", { count: "exact", head: true }),
+        supabase.from("schools").select("id", { count: "exact", head: true }),
+        supabase.from("academic_years").select("id", { count: "exact", head: true }),
         supabase.from("announcements").select("id", { count: "exact", head: true }),
         supabase.from("enrollments").select("id", { count: "exact", head: true }),
         supabase.from("user_roles").select("role"),
@@ -37,6 +39,8 @@ function AdminDashboard() {
       return {
         users: users.count ?? 0,
         classes: classes.count ?? 0,
+        schools: schools.count ?? 0,
+        academicYears: academicYears.count ?? 0,
         announcements: announcements.count ?? 0,
         enrollments: enrollments.count ?? 0,
         assignments: assignments.count ?? 0,
@@ -87,6 +91,16 @@ function AdminDashboard() {
   return (
     <PortalShell title="Administrator portal" subtitle="School-wide activity at a glance.">
       <div className="mb-6 flex flex-wrap gap-2">
+        <Link to="/admin/schools">
+          <Button variant="outline" size="sm">
+            <School className="h-4 w-4 mr-2" /> Schools
+          </Button>
+        </Link>
+        <Link to="/admin/academic-years">
+          <Button variant="outline" size="sm">
+            <Layers className="h-4 w-4 mr-2" /> Academic years
+          </Button>
+        </Link>
         <Link to="/admin/users">
           <Button variant="outline" size="sm">
             <Users className="h-4 w-4 mr-2" /> Manage users
@@ -110,6 +124,8 @@ function AdminDashboard() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Stat icon={School} label="Schools" value={isLoading ? "—" : String(stats?.schools ?? 0)} />
+        <Stat icon={Layers} label="Academic years" value={isLoading ? "—" : String(stats?.academicYears ?? 0)} />
         <Stat icon={Users} label="Total users" value={isLoading ? "—" : String(stats?.users ?? 0)} />
         <Stat icon={BookOpen} label="Active classes" value={isLoading ? "—" : String(stats?.classes ?? 0)} />
         <Stat icon={GraduationCap} label="Enrollments" value={isLoading ? "—" : String(stats?.enrollments ?? 0)} />
@@ -117,7 +133,6 @@ function AdminDashboard() {
         <Stat icon={Megaphone} label="Announcements" value={isLoading ? "—" : String(stats?.announcements ?? 0)} />
         <Stat icon={CalendarClock} label="Events" value={isLoading ? "—" : String(stats?.events ?? 0)} />
         <Stat icon={Wallet} label="Outstanding fees" value={isLoading ? "—" : String(stats?.outstandingFees ?? 0)} color="text-destructive" />
-        <Stat icon={MessagesSquare} label="Enrollments" value={isLoading ? "—" : String(stats?.enrollments ?? 0)} />
       </div>
 
       <div className="grid gap-6 mt-8 lg:grid-cols-3">

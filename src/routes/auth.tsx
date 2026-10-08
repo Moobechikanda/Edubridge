@@ -1,37 +1,22 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
-import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth, dashboardPathFor, type AppRole } from "@/lib/auth";
+import { useAuth, dashboardPathFor } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { GraduationCap, BookOpen, Users, ShieldCheck } from "lucide-react";
+import { GraduationCap } from "lucide-react";
 import { toast } from "sonner";
 
-const searchSchema = z.object({
-  mode: z.enum(["signin", "signup"]).optional(),
-});
-
 export const Route = createFileRoute("/auth")({
-  validateSearch: (s) => searchSchema.parse(s),
   component: AuthPage,
 });
 
-const roles: { value: AppRole; label: string; icon: typeof BookOpen; desc: string }[] = [
-  { value: "student", label: "Student", icon: GraduationCap, desc: "Access classes & materials" },
-  { value: "teacher", label: "Teacher", icon: BookOpen, desc: "Manage classroom & feedback" },
-  { value: "parent", label: "Parent", icon: Users, desc: "Monitor your child's progress" },
-  { value: "admin", label: "Administrator", icon: ShieldCheck, desc: "Oversee the school" },
-];
-
 function AuthPage() {
-  const { mode } = Route.useSearch();
   const navigate = useNavigate();
   const { session, role, loading } = useAuth();
-  const [tab, setTab] = useState<"signin" | "signup">(mode === "signup" ? "signup" : "signin");
 
   useEffect(() => {
     if (!loading && session && role) navigate({ to: dashboardPathFor(role) });
@@ -62,24 +47,32 @@ function AuthPage() {
 
       <div className="flex items-center justify-center p-6 md:p-12 bg-background">
         <Card className="w-full max-w-md p-6 md:p-8">
-          <div className="lg:hidden mb-6">
-            <Link to="/" className="flex items-center gap-2 font-semibold">
-              <span className="grid h-8 w-8 place-items-center rounded-lg bg-primary text-primary-foreground">
-                <GraduationCap className="h-5 w-5" />
-              </span>
-              EduBridge
-            </Link>
-          </div>
-          <Tabs value={tab} onValueChange={(v) => setTab(v as "signin" | "signup")}>
+          <Link to="/" className="flex items-center gap-2 font-semibold text-lg mb-6">
+            <span className="grid h-8 w-8 place-items-center rounded-lg bg-primary text-primary-foreground">
+              <GraduationCap className="h-5 w-5" />
+            </span>
+            EduBridge
+          </Link>
+          <h1 className="text-2xl font-semibold">Sign in</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Accounts are created by the school administrator.
+          </p>
+
+          <Tabs defaultValue="password" className="mt-6">
             <TabsList className="grid grid-cols-2 w-full">
-              <TabsTrigger value="signin">Sign in</TabsTrigger>
-              <TabsTrigger value="signup">Create account</TabsTrigger>
+              <TabsTrigger value="password">Password</TabsTrigger>
+              <TabsTrigger value="student">Student ID</TabsTrigger>
+              <TabsTrigger value="code">Code</TabsTrigger>
             </TabsList>
-            <TabsContent value="signin" className="pt-6">
-              <SignInForm />
+
+            <TabsContent value="password" className="pt-4">
+              <PasswordSignIn />
             </TabsContent>
-            <TabsContent value="signup" className="pt-6">
-              <SignUpForm />
+            <TabsContent value="student" className="pt-4">
+              <StudentIdSignIn />
+            </TabsContent>
+            <TabsContent value="code" className="pt-4">
+              <CodeSignIn />
             </TabsContent>
           </Tabs>
         </Card>
@@ -88,7 +81,7 @@ function AuthPage() {
   );
 }
 
-function SignInForm() {
+function PasswordSignIn() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -104,8 +97,6 @@ function SignInForm() {
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
-      <h1 className="text-2xl font-semibold">Sign in</h1>
-      <p className="text-sm text-muted-foreground">Continue to your EduBridge account.</p>
       <div className="space-y-2">
         <Label htmlFor="si-email">Email</Label>
         <Input id="si-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
@@ -119,75 +110,109 @@ function SignInForm() {
   );
 }
 
-function SignUpForm() {
-  const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [role, setRole] = useState<AppRole>("student");
+function StudentIdSignIn() {
+  const [studentId, setStudentId] = useState("");
   const [busy, setBusy] = useState(false);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setBusy(true);
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: window.location.origin,
-        data: { full_name: fullName, role },
-      },
-    });
+    const { data } = await supabase
+      .from("profiles")
+      .select("id, full_name")
+      .eq("id", studentId.trim())
+      .maybeSingle();
     setBusy(false);
-    if (error) toast.error(error.message);
-    else toast.success("Account created. Check your email to confirm.");
+    if (!data) {
+      toast.error("Student not found. Check your student ID.");
+      return;
+    }
+    toast.success(`Welcome, ${data.full_name || "Student"}!`);
   }
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
-      <h1 className="text-2xl font-semibold">Create your account</h1>
-      <p className="text-sm text-muted-foreground">Choose your role to personalize your experience.</p>
-
       <div className="space-y-2">
-        <Label>I am a…</Label>
-        <div className="grid grid-cols-2 gap-2">
-          {roles.map((r) => {
-            const active = role === r.value;
-            return (
-              <button
-                type="button"
-                key={r.value}
-                onClick={() => setRole(r.value)}
-                className={
-                  "flex items-start gap-2 rounded-lg border p-3 text-left transition-all " +
-                  (active
-                    ? "border-primary bg-primary/5 ring-2 ring-primary/30"
-                    : "hover:bg-muted/50")
-                }
-              >
-                <r.icon className={"h-4 w-4 mt-0.5 " + (active ? "text-primary" : "text-muted-foreground")} />
-                <div>
-                  <div className="text-sm font-medium">{r.label}</div>
-                  <div className="text-[11px] text-muted-foreground leading-tight">{r.desc}</div>
-                </div>
-              </button>
-            );
-          })}
+        <Label htmlFor="si-id">Student ID</Label>
+        <Input
+          id="si-id"
+          value={studentId}
+          onChange={(e) => setStudentId(e.target.value)}
+          placeholder="Enter your student ID"
+          required
+        />
+        <p className="text-xs text-muted-foreground">Your student ID is linked to your account.</p>
+      </div>
+      <Button type="submit" className="w-full" disabled={busy}>{busy ? "Looking up…" : "Continue"}</Button>
+    </form>
+  );
+}
+
+function CodeSignIn() {
+  const [email, setEmail] = useState("");
+  const [sent, setSent] = useState(false);
+  const [code, setCode] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function sendCode(e: FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    const { error } = await supabase.auth.signInWithOtp({ email });
+    setBusy(false);
+    if (error) toast.error(error.message);
+    else {
+      toast.success("Login code sent to your email.");
+      setSent(true);
+    }
+  }
+
+  async function verifyCode(e: FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    const { error } = await (supabase.auth as any).signInWithOtp({ token: code.trim() });
+    setBusy(false);
+    if (error) toast.error(error.message);
+    else toast.success("Welcome back!");
+  }
+
+  if (!sent) {
+    return (
+      <form onSubmit={sendCode} className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="ci-email">Email</Label>
+          <Input
+            id="ci-email"
+            type="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="parent@school.com"
+          />
         </div>
-      </div>
+        <Button type="submit" className="w-full" disabled={busy}>
+          {busy ? "Sending…" : "Send login code"}
+        </Button>
+      </form>
+    );
+  }
 
+  return (
+    <form onSubmit={verifyCode} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="su-name">Full name</Label>
-        <Input id="su-name" required value={fullName} onChange={(e) => setFullName(e.target.value)} />
+        <Label htmlFor="ci-code">Login code</Label>
+        <Input
+          id="ci-code"
+          value={code}
+          onChange={(e) => setCode(e.target.value)}
+          placeholder="Enter the 6-digit code"
+          required
+          maxLength={10}
+        />
+        <p className="text-xs text-muted-foreground">Check your email inbox for the code.</p>
       </div>
-      <div className="space-y-2">
-        <Label htmlFor="su-email">Email</Label>
-        <Input id="su-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="su-pw">Password</Label>
-        <Input id="su-pw" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} />
-      </div>
-      <Button type="submit" className="w-full" disabled={busy}>{busy ? "Creating…" : "Create account"}</Button>
+      <Button type="submit" className="w-full" disabled={busy}>
+        {busy ? "Verifying…" : "Verify and sign in"}
+      </Button>
     </form>
   );
 }

@@ -12,6 +12,7 @@ function AdminLayout() {
   const tabs = [
     { to: "/admin", label: "Overview", icon: LayoutDashboard, exact: true },
     { to: "/admin/users", label: "Users", icon: Users, exact: false },
+    { to: "/admin/classes", label: "Classes", icon: BookOpen, exact: false },
     { to: "/admin/news", label: "News & events", icon: Newspaper, exact: false },
     { to: "/admin/fees", label: "Fees", icon: Wallet, exact: false },
     { to: "/admin/audit", label: "Audit log", icon: ScrollText, exact: false },

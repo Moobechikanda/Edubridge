@@ -24,7 +24,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
-import { Plus, BookOpen, Pencil, Trash2 } from "lucide-react";
+import { BookOpen } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/teacher/classes")({
   component: TeacherClasses,
@@ -42,9 +42,6 @@ type ClassRow = {
 
 function TeacherClasses() {
   const { user } = useAuth();
-  const qc = useQueryClient();
-  const [editing, setEditing] = useState<ClassRow | null>(null);
-  const [open, setOpen] = useState(false);
 
   const { data: classes = [], isLoading } = useQuery({
     queryKey: ["teacher-classes", user?.id],
@@ -60,47 +57,13 @@ function TeacherClasses() {
     },
   });
 
-  const remove = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("classes").delete().eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast.success("Class deleted");
-      qc.invalidateQueries({ queryKey: ["teacher-classes"] });
-    },
-    onError: (e: any) => toast.error(e.message ?? "Delete failed"),
-  });
-
   return (
     <div className="container mx-auto px-4 py-10">
       <div className="mb-6 flex items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">My classes</h1>
-          <p className="text-muted-foreground mt-1 text-sm">
-            Create classes and share the join code with students.
-          </p>
+          <p className="text-muted-foreground mt-1 text-sm">Classes assigned to you by the administrator.</p>
         </div>
-        <Dialog
-          open={open}
-          onOpenChange={(o) => {
-            setOpen(o);
-            if (!o) setEditing(null);
-          }}
-        >
-          <DialogTrigger asChild>
-            <Button onClick={() => setEditing(null)}>
-              <Plus className="h-4 w-4" /> New class
-            </Button>
-          </DialogTrigger>
-          <ClassFormDialog
-            initial={editing}
-            onClose={() => {
-              setOpen(false);
-              setEditing(null);
-            }}
-          />
-        </Dialog>
       </div>
 
       {isLoading ? (
@@ -129,30 +92,6 @@ function TeacherClasses() {
                   {c.grade_level && (
                     <div className="text-sm text-muted-foreground">Grade {c.grade_level}</div>
                   )}
-                </div>
-                <div className="flex gap-1">
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    onClick={() => {
-                      setEditing(c);
-                      setOpen(true);
-                    }}
-                    aria-label="Edit"
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    onClick={() => {
-                      if (confirm(`Delete "${c.name}"? This removes all enrollments and assignments.`))
-                        remove.mutate(c.id);
-                    }}
-                    aria-label="Delete"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
                 </div>
               </div>
               {c.description && (
