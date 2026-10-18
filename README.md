@@ -20,7 +20,7 @@ Built with **TanStack Start (React 19 + Vite)**, **Tailwind CSS v4**, **shadcn/u
 
 ## Local development (VS Code)
 
-Requires Node.js 20+ (or [Bun](https://bun.sh)).
+Requires Node.js 22+ (or [Bun](https://bun.sh)).
 
 ```bash
 # with npm
@@ -72,9 +72,46 @@ Then sign in at `/admin-login`. Keep service-role credentials in server-only env
 
 Useful scripts: `npm run build` (production build), `npm run preview` (serve the build), `npm run lint`.
 
-> **GitHub Pages is not supported.** Pages only serves static files, and this app is a
+> **GitHub Pages is not supported.** GitHub Pages only serves static files, and this app is a
 > server-rendered TanStack Start application with server functions. Use Vercel (below),
-> Netlify, or Cloudflare Workers instead.
+> Netlify, or Cloudflare Pages with the Functions setup below.
+
+## Deploying to Cloudflare Pages
+
+This project uses TanStack Start server rendering and server functions. Its build is configured with Nitro's `cloudflare_pages` preset, so deploy it as a Cloudflare Pages project with Functions enabled rather than as a static-only site.
+
+### Cloudflare Pages dashboard settings
+
+- **Build command:** `npm run build`
+- **Build output directory:** `dist`
+- **Root directory:** `/` (the repository root)
+- **Node.js version:** 22 or newer
+
+The Pages project name is set to `edubridge` in `wrangler.jsonc` and the `deploy` script. If your Pages project uses a different name, update both to match it.
+
+### Environment variables and secrets
+
+Add these in the Pages project's **Settings → Variables and Secrets**, for both Production and Preview as needed:
+
+- `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` — public Supabase values, available during the build for browser code.
+- `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` — server runtime values.
+- `SUPABASE_SERVICE_ROLE_KEY` — server-only secret; required for admin account provisioning.
+- `RESEND_API_KEY` and `EMAIL_FROM` — server-only values; required to email student linking codes.
+
+Never add the service-role key to a `VITE_*` variable. For local Pages preview, copy `.env.example` to `.env` and set the two `VITE_SUPABASE_*` values there; copy `.dev.vars.example` to `.dev.vars` and set the server-side values there. Then run:
+
+```bash
+npm run build
+npm run preview
+```
+
+To deploy from a terminal, first run `npx wrangler login`, create the `edubridge` Pages project in Cloudflare if it does not exist, and then run:
+
+```bash
+npm run deploy
+```
+
+Apply the SQL migrations in `supabase/migrations/` to the Supabase project before using the app. Configure the Supabase Auth redirect URLs for the deployed Pages domain as well.
 
 ---
 

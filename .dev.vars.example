@@ -1,0 +1,7 @@
+# Copy to .dev.vars for local Cloudflare Pages preview. Use real values only
+# in the ignored .dev.vars file or in Cloudflare's dashboard secrets.
+SUPABASE_URL=https://YOUR-PROJECT.supabase.co
+SUPABASE_PUBLISHABLE_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+RESEND_API_KEY=your-resend-api-key
+EMAIL_FROM=EduBridge <noreply@your-verified-domain.example>
