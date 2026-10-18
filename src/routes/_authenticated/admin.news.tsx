@@ -8,7 +8,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PortalShell } from "../_authenticated";
@@ -41,7 +45,10 @@ const CATEGORIES = [
 
 function AdminNews() {
   return (
-    <PortalShell title="School news & meetings" subtitle="Post school-wide updates and schedule parent–teacher meetings.">
+    <PortalShell
+      title="School news & meetings"
+      subtitle="Post school-wide updates and schedule parent–teacher meetings."
+    >
       <Tabs defaultValue="news">
         <TabsList>
           <TabsTrigger value="news">Announcements</TabsTrigger>
@@ -82,13 +89,20 @@ function NewsPanel() {
     mutationFn: async () => {
       if (!title.trim() || !body.trim()) throw new Error("Title and body required");
       const { error } = await supabase.from("school_announcements").insert({
-        title: title.trim(), body: body.trim(), category, pinned, posted_by: user!.id,
+        title: title.trim(),
+        body: body.trim(),
+        category,
+        pinned,
+        posted_by: user!.id,
       });
       if (error) throw error;
     },
     onSuccess: () => {
       toast.success("Posted to school news");
-      setTitle(""); setBody(""); setPinned(false); setCategory("news");
+      setTitle("");
+      setBody("");
+      setPinned(false);
+      setCategory("news");
       qc.invalidateQueries({ queryKey: ["admin-school-announcements"] });
       qc.invalidateQueries({ queryKey: ["school-announcements"] });
     },
@@ -110,9 +124,15 @@ function NewsPanel() {
         <div className="space-y-1.5">
           <Label>Category</Label>
           <Select value={category} onValueChange={(v) => setCategory(v as typeof category)}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
-              {CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+              {CATEGORIES.map((c) => (
+                <SelectItem key={c} value={c}>
+                  {c}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -122,7 +142,12 @@ function NewsPanel() {
         </div>
         <div className="space-y-1.5">
           <Label>Body</Label>
-          <Textarea value={body} onChange={(e) => setBody(e.target.value)} rows={5} maxLength={2000} />
+          <Textarea
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            rows={5}
+            maxLength={2000}
+          />
         </div>
         <label className="flex items-center gap-2 text-sm">
           <Checkbox checked={pinned} onCheckedChange={(v) => setPinned(v === true)} /> Pin to top
@@ -134,25 +159,37 @@ function NewsPanel() {
 
       <div className="space-y-3">
         {items.length === 0 ? (
-          <Card className="p-8 text-center text-sm text-muted-foreground">No announcements yet.</Card>
-        ) : items.map((a) => (
-          <Card key={a.id} className="p-4">
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2 flex-wrap">
-                  {a.pinned && <Pin className="h-3 w-3 text-primary" />}
-                  <span className="text-xs font-medium uppercase text-muted-foreground">{a.category}</span>
-                  <span className="font-semibold">{a.title}</span>
-                </div>
-                <div className="text-xs text-muted-foreground mt-1">{new Date(a.created_at).toLocaleString()}</div>
-                <p className="text-sm mt-2 whitespace-pre-wrap line-clamp-3">{a.body}</p>
-              </div>
-              <Button size="icon" variant="ghost" onClick={() => confirm("Delete?") && remove.mutate(a.id)}>
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
+          <Card className="p-8 text-center text-sm text-muted-foreground">
+            No announcements yet.
           </Card>
-        ))}
+        ) : (
+          items.map((a) => (
+            <Card key={a.id} className="p-4">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {a.pinned && <Pin className="h-3 w-3 text-primary" />}
+                    <span className="text-xs font-medium uppercase text-muted-foreground">
+                      {a.category}
+                    </span>
+                    <span className="font-semibold">{a.title}</span>
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    {new Date(a.created_at).toLocaleString()}
+                  </div>
+                  <p className="text-sm mt-2 whitespace-pre-wrap line-clamp-3">{a.body}</p>
+                </div>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => confirm("Delete?") && remove.mutate(a.id)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </Card>
+          ))
+        )}
       </div>
     </div>
   );
@@ -170,7 +207,9 @@ function MeetingsPanel() {
     queryKey: ["admin-meetings"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("meetings").select("*").order("scheduled_at", { ascending: false });
+        .from("meetings")
+        .select("*")
+        .order("scheduled_at", { ascending: false });
       if (error) throw error;
       return data ?? [];
     },
@@ -190,7 +229,10 @@ function MeetingsPanel() {
     },
     onSuccess: () => {
       toast.success("Meeting scheduled");
-      setTitle(""); setDescription(""); setScheduledAt(""); setLocation("");
+      setTitle("");
+      setDescription("");
+      setScheduledAt("");
+      setLocation("");
       qc.invalidateQueries({ queryKey: ["admin-meetings"] });
       qc.invalidateQueries({ queryKey: ["meetings-upcoming"] });
     },
@@ -216,16 +258,29 @@ function MeetingsPanel() {
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <Label>Date & time</Label>
-            <Input type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} />
+            <Input
+              type="datetime-local"
+              value={scheduledAt}
+              onChange={(e) => setScheduledAt(e.target.value)}
+            />
           </div>
           <div className="space-y-1.5">
             <Label>Location</Label>
-            <Input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Room A / Online" />
+            <Input
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              placeholder="Room A / Online"
+            />
           </div>
         </div>
         <div className="space-y-1.5">
           <Label>Description</Label>
-          <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} maxLength={2000} />
+          <Textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={4}
+            maxLength={2000}
+          />
         </div>
         <Button onClick={() => post.mutate()} disabled={post.isPending}>
           {post.isPending ? "Scheduling…" : "Schedule"}
@@ -234,24 +289,34 @@ function MeetingsPanel() {
 
       <div className="space-y-3">
         {items.length === 0 ? (
-          <Card className="p-8 text-center text-sm text-muted-foreground">No meetings scheduled.</Card>
-        ) : items.map((m) => (
-          <Card key={m.id} className="p-4">
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0 flex-1">
-                <div className="font-semibold">{m.title}</div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  {new Date(m.scheduled_at).toLocaleString()}
-                  {m.location && ` · ${m.location}`}
-                </div>
-                {m.description && <p className="text-sm mt-2 whitespace-pre-wrap line-clamp-3">{m.description}</p>}
-              </div>
-              <Button size="icon" variant="ghost" onClick={() => confirm("Delete?") && remove.mutate(m.id)}>
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
+          <Card className="p-8 text-center text-sm text-muted-foreground">
+            No meetings scheduled.
           </Card>
-        ))}
+        ) : (
+          items.map((m) => (
+            <Card key={m.id} className="p-4">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <div className="font-semibold">{m.title}</div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    {new Date(m.scheduled_at).toLocaleString()}
+                    {m.location && ` · ${m.location}`}
+                  </div>
+                  {m.description && (
+                    <p className="text-sm mt-2 whitespace-pre-wrap line-clamp-3">{m.description}</p>
+                  )}
+                </div>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => confirm("Delete?") && remove.mutate(m.id)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </Card>
+          ))
+        )}
       </div>
     </div>
   );

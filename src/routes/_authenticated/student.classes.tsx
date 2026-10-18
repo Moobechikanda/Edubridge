@@ -25,9 +25,7 @@ function extractJoinCode(input: string): string {
     try {
       const url = new URL(raw);
       const fromQuery =
-        url.searchParams.get("join") ??
-        url.searchParams.get("code") ??
-        url.searchParams.get("cjc"); // Google Classroom invite param
+        url.searchParams.get("join") ?? url.searchParams.get("code") ?? url.searchParams.get("cjc"); // Google Classroom invite param
       if (fromQuery) return fromQuery.trim().toUpperCase();
       const last = url.pathname.split("/").filter(Boolean).pop();
       return (last ?? "").trim().toUpperCase();
@@ -82,7 +80,7 @@ function StudentClasses() {
         .eq("student_id", user!.id);
       if (error) throw error;
       const teacherIds = Array.from(
-        new Set((enr ?? []).map((e: any) => e.classes?.teacher_id).filter(Boolean)),
+        new Set((enr ?? []).map((e) => e.classes?.teacher_id).filter(Boolean)),
       );
       const profMap = new Map<string, string>();
       if (teacherIds.length) {
@@ -92,7 +90,7 @@ function StudentClasses() {
           .in("id", teacherIds);
         (profs ?? []).forEach((p) => profMap.set(p.id, p.full_name ?? ""));
       }
-      return (enr ?? []).map((e: any) => ({
+      return (enr ?? []).map((e) => ({
         enrollment_id: e.id,
         id: e.classes?.id,
         name: e.classes?.name,
@@ -148,7 +146,7 @@ function StudentClasses() {
       qc.invalidateQueries({ queryKey: ["student-classes"] });
       qc.invalidateQueries({ queryKey: ["student-overview"] });
     },
-    onError: (e: any) => toast.error(e.message ?? "Could not join"),
+    onError: (e: Error) => toast.error(e.message || "Could not join"),
   });
 
   const leave = useMutation({
@@ -160,7 +158,7 @@ function StudentClasses() {
       toast.success("Left class");
       qc.invalidateQueries({ queryKey: ["student-classes"] });
     },
-    onError: (e: any) => toast.error(e.message ?? "Failed"),
+    onError: (e: Error) => toast.error(e.message || "Failed"),
   });
 
   return (
@@ -177,8 +175,8 @@ function StudentClasses() {
             <div>
               <div className="text-sm font-medium">Your student ID (parent code)</div>
               <div className="text-xs text-muted-foreground">
-                Automatically created for you. Share it with your parent or guardian so they can link to
-                your account and follow your progress.
+                Automatically created for you. Share it with your parent or guardian so they can
+                link to your account and follow your progress.
               </div>
             </div>
           </div>
@@ -230,9 +228,9 @@ function StudentClasses() {
           </Button>
         </div>
         <p className="text-xs text-muted-foreground mt-3">
-          The code is created by your teacher when they set up the class here — it is not a Zoom or Google
-          Meet code. You can paste an EduBridge invite link, or a Google Classroom invite link (we read the
-          class code from it) and we'll pull the code out for you.
+          The code is created by your teacher when they set up the class here — it is not a Zoom or
+          Google Meet code. You can paste an EduBridge invite link, or a Google Classroom invite
+          link (we read the class code from it) and we'll pull the code out for you.
         </p>
       </Card>
 
@@ -249,7 +247,10 @@ function StudentClasses() {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {[...classes]
-            .sort((a, b) => (a.subject ?? "").localeCompare(b.subject ?? "") || a.name.localeCompare(b.name))
+            .sort(
+              (a, b) =>
+                (a.subject ?? "").localeCompare(b.subject ?? "") || a.name.localeCompare(b.name),
+            )
             .map((c) => {
               const info = pendingByClass[c.id];
               return (
@@ -257,7 +258,9 @@ function StudentClasses() {
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <div className="font-semibold truncate">{c.name}</div>
-                      {c.subject && <div className="text-sm text-muted-foreground">{c.subject}</div>}
+                      {c.subject && (
+                        <div className="text-sm text-muted-foreground">{c.subject}</div>
+                      )}
                     </div>
                     <Button
                       size="icon"
@@ -271,7 +274,9 @@ function StudentClasses() {
                     </Button>
                   </div>
                   {c.description && (
-                    <p className="mt-2 text-sm text-muted-foreground line-clamp-3">{c.description}</p>
+                    <p className="mt-2 text-sm text-muted-foreground line-clamp-3">
+                      {c.description}
+                    </p>
                   )}
                   <div className="mt-3">
                     {info && info.pending > 0 ? (

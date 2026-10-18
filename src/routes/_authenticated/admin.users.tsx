@@ -48,6 +48,7 @@ function AdminUsers() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [qualifications, setQualifications] = useState("");
+  const [parentEmail, setParentEmail] = useState("");
   const [role, setRole] = useState<AppRole>("student");
 
   const { data: users = [], isLoading } = useQuery({
@@ -66,10 +67,7 @@ function AdminUsers() {
   });
 
   const filtered = useMemo(
-    () =>
-      users.filter((u) =>
-        (u.full_name ?? "").toLowerCase().includes(search.toLowerCase()),
-      ),
+    () => users.filter((u) => (u.full_name ?? "").toLowerCase().includes(search.toLowerCase())),
     [users, search],
   );
 
@@ -103,19 +101,36 @@ function AdminUsers() {
     mutationFn: async () => {
       if (!name.trim() || !email.trim() || !password.trim()) throw new Error("All fields required");
       if (password.length < 6) throw new Error("Password must be at least 6 characters");
-      await createManagedUser({
+      return createManagedUser({
         data: {
           email: email.trim(),
           password: password.trim(),
           fullName: name.trim(),
           role: role as "student" | "teacher" | "parent",
           qualifications: qualifications.trim() || undefined,
+          parentEmail: role === "student" ? parentEmail.trim() : undefined,
         },
       });
     },
-    onSuccess: () => {
-      toast.success("User created");
-      setName(""); setEmail(""); setPassword(""); setQualifications(""); setRole("student"); setOpen(false);
+    onSuccess: (result) => {
+      if (result.emailSent) {
+        toast.success(
+          `Student account created. The student code was emailed to ${result.parentEmail}.`,
+        );
+      } else if (result.studentCode) {
+        toast.error(
+          `${result.emailError} Student account is ready. Student code: ${result.studentCode}`,
+        );
+      } else {
+        toast.success("User created");
+      }
+      setName("");
+      setEmail("");
+      setPassword("");
+      setQualifications("");
+      setParentEmail("");
+      setRole("student");
+      setOpen(false);
       qc.invalidateQueries({ queryKey: ["admin-users"] });
       qc.invalidateQueries({ queryKey: ["admin-stats"] });
     },
@@ -123,7 +138,10 @@ function AdminUsers() {
   });
 
   return (
-    <PortalShell title="User management" subtitle="Create accounts, search users, and change roles.">
+    <PortalShell
+      title="User management"
+      subtitle="Create accounts, search users, and change roles."
+    >
       <div className="mb-4 flex flex-wrap gap-2">
         <Card className="p-4 flex-1 min-w-[200px]">
           <Input
@@ -145,20 +163,55 @@ function AdminUsers() {
             <div className="space-y-4">
               <div className="space-y-1.5">
                 <Label>Full name</Label>
-                <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Student name" />
+                <Input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Student name"
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>Email</Label>
-                <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="student@school.com" />
+                <Input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="student@school.com"
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>Password</Label>
-                <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Min 6 characters" />
+                <Input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Min 6 characters"
+                />
               </div>
               {role === "teacher" && (
                 <div className="space-y-1.5">
                   <Label>Qualifications</Label>
-                  <Input value={qualifications} onChange={(e) => setQualifications(e.target.value)} placeholder="Subjects, grades, or certifications" />
+                  <Input
+                    value={qualifications}
+                    onChange={(e) => setQualifications(e.target.value)}
+                    placeholder="Subjects, grades, or certifications"
+                  />
+                </div>
+              )}
+              {role === "student" && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="student-parent-email">Parent account email</Label>
+                  <Input
+                    id="student-parent-email"
+                    type="email"
+                    value={parentEmail}
+                    onChange={(event) => setParentEmail(event.target.value)}
+                    placeholder="Enter the email used for the parent's account"
+                    required
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Create the parent account first. The student linking code will be sent to this
+                    address.
+                  </p>
                 </div>
               )}
               <div className="space-y-1.5">
@@ -169,14 +222,18 @@ function AdminUsers() {
                   </SelectTrigger>
                   <SelectContent>
                     {ROLES.filter((r) => r !== "admin").map((r) => (
-                      <SelectItem key={r} value={r} className="capitalize">{r}</SelectItem>
+                      <SelectItem key={r} value={r} className="capitalize">
+                        {r}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
             </div>
             <DialogFooter>
-              <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
+              <Button variant="ghost" onClick={() => setOpen(false)}>
+                Cancel
+              </Button>
               <Button onClick={() => createUser.mutate()} disabled={createUser.isPending}>
                 {createUser.isPending ? "Creating…" : "Create account"}
               </Button>
@@ -198,13 +255,20 @@ function AdminUsers() {
                   <div className="font-medium truncate">{u.full_name || "Unnamed"}</div>
                   <div className="text-xs text-muted-foreground font-mono">{u.id.slice(0, 8)}…</div>
                   {u.role === "student" && u.student_code && (
-                    <div className="text-xs text-muted-foreground">Student code: <span className="font-mono font-semibold">{u.student_code}</span></div>
+                    <div className="text-xs text-muted-foreground">
+                      Student code:{" "}
+                      <span className="font-mono font-semibold">{u.student_code}</span>
+                    </div>
                   )}
                   {u.role === "parent" && u.parent_code && (
-                    <div className="text-xs text-muted-foreground">Parent code: <span className="font-mono font-semibold">{u.parent_code}</span></div>
+                    <div className="text-xs text-muted-foreground">
+                      Parent code: <span className="font-mono font-semibold">{u.parent_code}</span>
+                    </div>
                   )}
                   {u.role === "teacher" && u.teacher_qualifications && (
-                    <div className="text-xs text-muted-foreground">Qualifications: {u.teacher_qualifications}</div>
+                    <div className="text-xs text-muted-foreground">
+                      Qualifications: {u.teacher_qualifications}
+                    </div>
                   )}
                 </div>
                 <div className="flex items-center gap-2">

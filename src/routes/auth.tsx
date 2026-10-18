@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth, dashboardPathFor } from "@/lib/auth";
@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { GraduationCap } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/auth")({
@@ -28,18 +27,13 @@ function AuthPage() {
         className="hidden lg:flex flex-col justify-between p-12 text-primary-foreground"
         style={{ background: "var(--gradient-hero)" }}
       >
-        <Link to="/" className="flex items-center gap-2 font-semibold text-lg">
-          <span className="grid h-9 w-9 place-items-center rounded-lg bg-primary-foreground/20 backdrop-blur">
-            <GraduationCap className="h-5 w-5" />
-          </span>
-          EduBridge
-        </Link>
         <div>
           <h2 className="text-4xl font-bold leading-tight">
             Welcome to the bridge between home and school.
           </h2>
           <p className="mt-4 text-primary-foreground/80 max-w-md">
-            Communication, learning and progress — connected for every member of your school community.
+            Communication, learning and progress — connected for every member of your school
+            community.
           </p>
         </div>
         <p className="text-sm text-primary-foreground/70">© EduBridge {new Date().getFullYear()}</p>
@@ -47,12 +41,6 @@ function AuthPage() {
 
       <div className="flex items-center justify-center p-6 md:p-12 bg-background">
         <Card className="w-full max-w-md p-6 md:p-8">
-          <Link to="/" className="flex items-center gap-2 font-semibold text-lg mb-6">
-            <span className="grid h-8 w-8 place-items-center rounded-lg bg-primary text-primary-foreground">
-              <GraduationCap className="h-5 w-5" />
-            </span>
-            EduBridge
-          </Link>
           <h1 className="text-2xl font-semibold">Sign in</h1>
           <p className="text-sm text-muted-foreground mt-1">
             Accounts are created by the school administrator.
@@ -99,13 +87,27 @@ function PasswordSignIn() {
     <form onSubmit={onSubmit} className="space-y-4">
       <div className="space-y-2">
         <Label htmlFor="si-email">Email</Label>
-        <Input id="si-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+        <Input
+          id="si-email"
+          type="email"
+          required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
       </div>
       <div className="space-y-2">
         <Label htmlFor="si-pw">Password</Label>
-        <Input id="si-pw" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+        <Input
+          id="si-pw"
+          type="password"
+          required
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
       </div>
-      <Button type="submit" className="w-full" disabled={busy}>{busy ? "Signing in…" : "Sign in"}</Button>
+      <Button type="submit" className="w-full" disabled={busy}>
+        {busy ? "Signing in…" : "Sign in"}
+      </Button>
     </form>
   );
 }
@@ -143,7 +145,9 @@ function StudentIdSignIn() {
         />
         <p className="text-xs text-muted-foreground">Your student ID is linked to your account.</p>
       </div>
-      <Button type="submit" className="w-full" disabled={busy}>{busy ? "Looking up…" : "Continue"}</Button>
+      <Button type="submit" className="w-full" disabled={busy}>
+        {busy ? "Looking up…" : "Continue"}
+      </Button>
     </form>
   );
 }
@@ -169,7 +173,11 @@ function CodeSignIn() {
   async function verifyCode(e: FormEvent) {
     e.preventDefault();
     setBusy(true);
-    const { error } = await (supabase.auth as any).signInWithOtp({ token: code.trim() });
+    const { error } = await supabase.auth.verifyOtp({
+      email,
+      token: code.trim(),
+      type: "email",
+    });
     setBusy(false);
     if (error) toast.error(error.message);
     else toast.success("Welcome back!");

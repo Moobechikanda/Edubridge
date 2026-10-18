@@ -104,14 +104,10 @@ function MessagesPage() {
     if (!user) return;
     const ch = supabase
       .channel(`msg-${user.id}`)
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "messages" },
-        () => {
-          qc.invalidateQueries({ queryKey: ["msg-thread"] });
-          qc.invalidateQueries({ queryKey: ["msg-unread-counts"] });
-        },
-      )
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, () => {
+        qc.invalidateQueries({ queryKey: ["msg-thread"] });
+        qc.invalidateQueries({ queryKey: ["msg-unread-counts"] });
+      })
       .subscribe();
     return () => {
       supabase.removeChannel(ch);
@@ -123,10 +119,14 @@ function MessagesPage() {
     if (!user || !activeId) return;
     const unread = thread.filter((m) => m.recipient_id === user.id && !m.read_at).map((m) => m.id);
     if (unread.length > 0) {
-      supabase.from("messages").update({ read_at: new Date().toISOString() }).in("id", unread).then(() => {
-        qc.invalidateQueries({ queryKey: ["msg-thread"] });
-        qc.invalidateQueries({ queryKey: ["msg-unread-counts"] });
-      });
+      supabase
+        .from("messages")
+        .update({ read_at: new Date().toISOString() })
+        .in("id", unread)
+        .then(() => {
+          qc.invalidateQueries({ queryKey: ["msg-thread"] });
+          qc.invalidateQueries({ queryKey: ["msg-unread-counts"] });
+        });
     }
     // scroll
     requestAnimationFrame(() => {
@@ -203,27 +203,29 @@ function MessagesPage() {
                 {filtered.map((c) => {
                   const unread = unreadCounts[c.id] ?? 0;
                   return (
-                  <li key={c.id}>
-                    <button
-                      onClick={() => setActiveId(c.id)}
-                      className={`w-full text-left px-3 py-2.5 hover:bg-accent/40 border-b flex items-center justify-between gap-2 ${
-                        activeId === c.id ? "bg-accent" : ""
-                      }`}
-                    >
-                      <div className="min-w-0">
-                        <div className="text-sm font-medium truncate">{c.full_name || "Unnamed"}</div>
-                        <div className="text-[11px] text-muted-foreground truncate">
-                          {(c.role ?? "contact").toUpperCase()}
-                          {c.related_student_names ? ` · ${c.related_student_names}` : ""}
+                    <li key={c.id}>
+                      <button
+                        onClick={() => setActiveId(c.id)}
+                        className={`w-full text-left px-3 py-2.5 hover:bg-accent/40 border-b flex items-center justify-between gap-2 ${
+                          activeId === c.id ? "bg-accent" : ""
+                        }`}
+                      >
+                        <div className="min-w-0">
+                          <div className="text-sm font-medium truncate">
+                            {c.full_name || "Unnamed"}
+                          </div>
+                          <div className="text-[11px] text-muted-foreground truncate">
+                            {(c.role ?? "contact").toUpperCase()}
+                            {c.related_student_names ? ` · ${c.related_student_names}` : ""}
+                          </div>
                         </div>
-                      </div>
-                      {unread > 0 && (
-                        <span className="shrink-0 inline-flex items-center justify-center rounded-full bg-primary text-primary-foreground text-[10px] font-semibold h-5 min-w-5 px-1">
-                          {unread}
-                        </span>
-                      )}
-                    </button>
-                  </li>
+                        {unread > 0 && (
+                          <span className="shrink-0 inline-flex items-center justify-center rounded-full bg-primary text-primary-foreground text-[10px] font-semibold h-5 min-w-5 px-1">
+                            {unread}
+                          </span>
+                        )}
+                      </button>
+                    </li>
                   );
                 })}
               </ul>
@@ -241,7 +243,9 @@ function MessagesPage() {
               <div className="px-4 py-3 border-b">
                 <div className="font-semibold">{activeName}</div>
                 {active?.related_class_names && (
-                  <div className="text-xs text-muted-foreground mt-0.5 truncate">{active.related_class_names}</div>
+                  <div className="text-xs text-muted-foreground mt-0.5 truncate">
+                    {active.related_class_names}
+                  </div>
                 )}
                 <div className="text-xs text-muted-foreground mt-1 flex flex-wrap gap-x-3 gap-y-1">
                   {active?.contact_email && <span>Email: {active.contact_email}</span>}
@@ -251,7 +255,9 @@ function MessagesPage() {
               </div>
               <div ref={scrollRef} className="flex-1 overflow-auto p-4 space-y-2">
                 {thread.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-8">No messages yet. Say hi!</p>
+                  <p className="text-sm text-muted-foreground text-center py-8">
+                    No messages yet. Say hi!
+                  </p>
                 ) : (
                   thread.map((m) => {
                     const mine = m.sender_id === user?.id;
@@ -268,7 +274,10 @@ function MessagesPage() {
                               mine ? "text-primary-foreground/70" : "text-muted-foreground"
                             }`}
                           >
-                            {new Date(m.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                            {new Date(m.created_at).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
                             {mine && <span>{m.read_at ? "· Seen" : "· Sent"}</span>}
                           </div>
                         </div>

@@ -1,5 +1,14 @@
 import { createFileRoute, Link, Outlet, useLocation } from "@tanstack/react-router";
-import { LayoutDashboard, Users, Newspaper, Wallet, ScrollText, CalendarDays, BookOpen } from "lucide-react";
+import {
+  LayoutDashboard,
+  Users,
+  Newspaper,
+  Wallet,
+  ScrollText,
+  CalendarDays,
+  BookOpen,
+  HeartPulse,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { RoleGuard } from "@/components/RoleGuard";
 
@@ -15,6 +24,7 @@ function AdminLayout() {
     { to: "/admin/classes", label: "Classes", icon: BookOpen, exact: false },
     { to: "/admin/news", label: "News & events", icon: Newspaper, exact: false },
     { to: "/admin/fees", label: "Fees", icon: Wallet, exact: false },
+    { to: "/admin/health", label: "Health records", icon: HeartPulse, exact: false },
     { to: "/admin/audit", label: "Audit log", icon: ScrollText, exact: false },
     { to: "/admin/subjects", label: "Subjects", icon: BookOpen, exact: false },
   ];
@@ -47,4 +57,3 @@ function AdminLayout() {
     </RoleGuard>
   );
 }
-

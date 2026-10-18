@@ -37,14 +37,15 @@ function StudentAssignments() {
           .eq("student_id", user!.id),
       ]);
       const subMap = new Map((subs ?? []).map((s) => [s.assignment_id, s]));
-      return (assignments ?? []).map((a: any) => ({
+      return (assignments ?? []).map((a) => ({
         ...a,
         submission: subMap.get(a.id) ?? null,
       }));
     },
   });
 
-  if (isLoading) return <div className="container mx-auto px-4 py-10 text-muted-foreground">Loading…</div>;
+  if (isLoading)
+    return <div className="container mx-auto px-4 py-10 text-muted-foreground">Loading…</div>;
 
   return (
     <div className="container mx-auto px-4 py-10">
@@ -57,7 +58,7 @@ function StudentAssignments() {
         </Card>
       ) : (
         <div className="grid gap-3 mt-6">
-          {items.map((a: any) => {
+          {items.map((a) => {
             const sub = a.submission;
             const overdue = !sub && a.due_date && new Date(a.due_date).getTime() < Date.now();
             return (
@@ -97,7 +98,18 @@ function StudentAssignments() {
   );
 }
 
-function StatusBadge({ sub, overdue, maxPoints }: { sub: any; overdue: boolean; maxPoints: number }) {
+function StatusBadge({
+  sub,
+  overdue,
+  maxPoints,
+}: {
+  sub: {
+    graded_at: string | null;
+    grade: number | null;
+  } | null;
+  overdue: boolean;
+  maxPoints: number;
+}) {
   if (sub?.graded_at) {
     return (
       <span className="inline-flex items-center gap-1 text-xs font-medium text-primary">

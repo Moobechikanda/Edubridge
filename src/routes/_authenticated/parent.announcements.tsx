@@ -70,7 +70,9 @@ function ParentAnnouncements() {
             <Button
               size="sm"
               variant="outline"
-              onClick={() => markRead.mutate(announcements.filter((a) => !readSet.has(a.id)).map((a) => a.id))}
+              onClick={() =>
+                markRead.mutate(announcements.filter((a) => !readSet.has(a.id)).map((a) => a.id))
+              }
               disabled={markRead.isPending}
             >
               <CheckCheck className="h-4 w-4 mr-1" /> Mark all read

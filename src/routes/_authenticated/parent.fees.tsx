@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { PortalShell } from "../_authenticated";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
+import type { Database } from "@/integrations/supabase/types";
 
 export const Route = createFileRoute("/_authenticated/parent/fees")({
   component: ParentFees,
@@ -23,16 +24,19 @@ function ParentFees() {
       if (linkError) throw linkError;
 
       const studentIds = (links ?? []).map((l) => l.student_id);
-      if (studentIds.length === 0) return { students: [], fees: [] as any[] };
+      if (studentIds.length === 0) {
+        return { students: [], fees: [] as Database["public"]["Tables"]["student_fees"]["Row"][] };
+      }
 
-      const [{ data: students, error: studentError }, { data: fees, error: feeError }] = await Promise.all([
-        supabase.from("profiles").select("id, full_name").in("id", studentIds),
-        supabase
-          .from("student_fees")
-          .select("*")
-          .in("student_id", studentIds)
-          .order("due_date", { ascending: true }),
-      ]);
+      const [{ data: students, error: studentError }, { data: fees, error: feeError }] =
+        await Promise.all([
+          supabase.from("profiles").select("id, full_name").in("id", studentIds),
+          supabase
+            .from("student_fees")
+            .select("*")
+            .in("student_id", studentIds)
+            .order("due_date", { ascending: true }),
+        ]);
       if (studentError) throw studentError;
       if (feeError) throw feeError;
 
@@ -41,7 +45,7 @@ function ParentFees() {
   });
 
   const nameMap = new Map((data?.students ?? []).map((s) => [s.id, s.full_name || "Student"]));
-  const grouped = new Map<string, any[]>();
+  const grouped = new Map<string, Database["public"]["Tables"]["student_fees"]["Row"][]>();
   for (const fee of data?.fees ?? []) {
     const list = grouped.get(fee.student_id) ?? [];
     list.push(fee);
@@ -53,7 +57,10 @@ function ParentFees() {
     .reduce((sum, f) => sum + (Number(f.amount) - Number(f.amount_paid)), 0);
 
   return (
-    <PortalShell title="Fees" subtitle="Track outstanding and upcoming fee items for your linked children.">
+    <PortalShell
+      title="Fees"
+      subtitle="Track outstanding and upcoming fee items for your linked children."
+    >
       <div className="grid gap-4 md:grid-cols-3 mb-6">
         <Card className="p-5">
           <div className="text-sm text-muted-foreground">Linked children</div>
@@ -65,7 +72,9 @@ function ParentFees() {
         </Card>
         <Card className="p-5">
           <div className="text-sm text-muted-foreground">Outstanding total</div>
-          <div className="text-2xl font-semibold mt-1">ZMW {Math.max(outstandingTotal, 0).toFixed(2)}</div>
+          <div className="text-2xl font-semibold mt-1">
+            ZMW {Math.max(outstandingTotal, 0).toFixed(2)}
+          </div>
         </Card>
       </div>
 
@@ -96,12 +105,19 @@ function ParentFees() {
                       <li key={f.id} className="py-3">
                         <div className="font-medium">{f.title}</div>
                         <div className="text-xs text-muted-foreground mt-0.5">
-                          Due {new Date(f.due_date).toLocaleDateString()} · {f.status.replace("_", " ")}
+                          Due {new Date(f.due_date).toLocaleDateString()} ·{" "}
+                          {f.status.replace("_", " ")}
                         </div>
                         <div className="text-sm mt-1">
-                          {f.currency} {Number(f.amount).toFixed(2)} · Paid {f.currency} {Number(f.amount_paid).toFixed(2)} · Remaining {f.currency} {remaining.toFixed(2)}
+                          {f.currency} {Number(f.amount).toFixed(2)} · Paid {f.currency}{" "}
+                          {Number(f.amount_paid).toFixed(2)} · Remaining {f.currency}{" "}
+                          {remaining.toFixed(2)}
                         </div>
-                        {f.description && <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">{f.description}</p>}
+                        {f.description && (
+                          <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">
+                            {f.description}
+                          </p>
+                        )}
                       </li>
                     );
                   })}

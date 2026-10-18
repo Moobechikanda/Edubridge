@@ -1,8 +1,8 @@
-import { createFileRoute, Link, Outlet, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
-import { useAuth, dashboardPathFor, type AppRole } from "@/lib/auth";
+import { useAuth, type AppRole } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
-import { GraduationCap, LogOut, MessageSquare, Newspaper, Settings } from "lucide-react";
+import { Home, LogOut, MessageSquare, Newspaper, Settings } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
 
 export const Route = createFileRoute("/_authenticated")({
@@ -12,73 +12,136 @@ export const Route = createFileRoute("/_authenticated")({
 function AuthenticatedLayout() {
   const { session, loading, role, signOut, user } = useAuth();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
 
   useEffect(() => {
     if (!loading && !session) navigate({ to: "/auth" });
   }, [loading, session, navigate]);
 
   if (loading || !session) {
-    return <div className="min-h-screen grid place-items-center text-muted-foreground">Loading…</div>;
+    return (
+      <div className="min-h-screen grid place-items-center text-muted-foreground">Loading…</div>
+    );
   }
 
   const roleLabel: Record<AppRole, string> = {
-    student: "Student", teacher: "Teacher", parent: "Parent", admin: "Administrator",
+    student: "Student",
+    teacher: "Teacher",
+    parent: "Parent",
+    admin: "Administrator",
   };
+  const homePath =
+    role === "teacher"
+      ? "/teacher"
+      : role === "parent"
+        ? "/parent"
+        : role === "admin"
+          ? "/admin"
+          : "/student";
+  const lastSegment = pathname.split("/").filter(Boolean).at(-1);
+  const pageTitle =
+    pathname === homePath || pathname === `${homePath}/`
+      ? `${role ? roleLabel[role] : "School"} portal`
+      : pathname.includes("/parent/children/")
+        ? "Student profile"
+        : lastSegment
+          ? lastSegment.replace(/[._-]/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase())
+          : "Home";
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      <header className="border-b bg-card">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          <Link to={role ? dashboardPathFor(role) : "/"} className="flex items-center gap-2 font-semibold">
-            <span className="grid h-8 w-8 place-items-center rounded-lg bg-primary text-primary-foreground">
-              <GraduationCap className="h-5 w-5" />
-            </span>
-            EduBridge
-            {role && (
-              <span className="ml-2 hidden sm:inline-flex items-center rounded-full bg-accent px-2.5 py-0.5 text-xs text-accent-foreground">
-                {roleLabel[role]}
-              </span>
-            )}
-          </Link>
+    <div className="portal-app min-h-screen flex flex-col bg-background">
+      <header className="portal-header border-b bg-blue-800 text-white">
+        <div className="container mx-auto flex min-h-14 items-center justify-between gap-3 px-4 py-2">
+          <h1 className="min-w-0 truncate text-base font-semibold sm:text-lg">{pageTitle}</h1>
           <div className="flex items-center gap-2">
-            <Link to="/news">
-              <Button variant="ghost" size="sm">
+            <Link to="/news" className="hidden sm:block">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-white hover:bg-white/10 hover:text-white"
+              >
                 <Newspaper className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">News</span>
+                News
               </Button>
             </Link>
-            <Link to="/messages">
-              <Button variant="ghost" size="sm">
-                <MessageSquare className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">Messages</span>
-              </Button>
-            </Link>
-            <NotificationBell />
-            <Link to="/settings/notifications">
-              <Button variant="ghost" size="sm" aria-label="Settings">
-                <Settings className="h-4 w-4" />
-              </Button>
-            </Link>
-            <span className="hidden md:block text-sm text-muted-foreground">{user?.email}</span>
-            <Button variant="ghost" size="sm" onClick={signOut}>
+            <span className="hidden max-w-56 truncate text-sm text-blue-100 md:block">
+              {user?.email}
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-white hover:bg-white/10 hover:text-white"
+              onClick={signOut}
+              aria-label="Sign out"
+            >
               <LogOut className="h-4 w-4 sm:mr-2" />
               <span className="hidden sm:inline">Sign out</span>
             </Button>
           </div>
         </div>
       </header>
-      <main className="flex-1">
+      <main className="portal-main flex-1 pb-20 md:pb-0">
         <Outlet />
       </main>
+      <nav aria-label="Primary navigation" className="portal-mobile-nav md:hidden">
+        <Link
+          to={homePath}
+          className={
+            pathname.startsWith(homePath)
+              ? "portal-mobile-nav-link is-active"
+              : "portal-mobile-nav-link"
+          }
+          aria-current={pathname.startsWith(homePath) ? "page" : undefined}
+        >
+          <Home aria-hidden="true" />
+          <span>Home</span>
+        </Link>
+        <div className="portal-mobile-nav-link portal-mobile-alerts">
+          <NotificationBell />
+          <span>Notifications</span>
+        </div>
+        <Link
+          to="/messages"
+          className={
+            pathname.startsWith("/messages")
+              ? "portal-mobile-nav-link is-active"
+              : "portal-mobile-nav-link"
+          }
+          aria-current={pathname.startsWith("/messages") ? "page" : undefined}
+        >
+          <MessageSquare aria-hidden="true" />
+          <span>Messages</span>
+        </Link>
+        <Link
+          to="/settings/notifications"
+          className={
+            pathname.startsWith("/settings")
+              ? "portal-mobile-nav-link is-active"
+              : "portal-mobile-nav-link"
+          }
+          aria-current={pathname.startsWith("/settings") ? "page" : undefined}
+        >
+          <Settings aria-hidden="true" />
+          <span>Settings</span>
+        </Link>
+      </nav>
     </div>
   );
 }
 
-export function PortalShell({ title, subtitle, children }: { title: string; subtitle: string; children: ReactNode }) {
+export function PortalShell({
+  title,
+  subtitle,
+  children,
+}: {
+  title: string;
+  subtitle: string;
+  children: ReactNode;
+}) {
   return (
-    <div className="container mx-auto px-4 py-10">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight">{title}</h1>
+    <div className="container mx-auto px-4 py-6 sm:py-8">
+      <div className="mb-5">
+        <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">{title}</h2>
         <p className="text-muted-foreground mt-1">{subtitle}</p>
       </div>
       {children}

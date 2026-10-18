@@ -26,7 +26,10 @@ export function MeetingRsvp({ meetingId }: { meetingId: string }) {
 
   const setStatus = useMutation({
     mutationFn: async (status: Status) => {
-      const { error } = await supabase.rpc("rsvp_meeting", { _meeting_id: meetingId, _status: status });
+      const { error } = await supabase.rpc("rsvp_meeting", {
+        _meeting_id: meetingId,
+        _status: status,
+      });
       if (error) throw error;
     },
     onSuccess: () => {
@@ -38,16 +41,23 @@ export function MeetingRsvp({ meetingId }: { meetingId: string }) {
 
   const current = rsvp?.status as Status | undefined;
   const opts: { v: Status; label: string }[] = [
-    { v: "yes", label: "Yes" }, { v: "maybe", label: "Maybe" }, { v: "no", label: "No" },
+    { v: "yes", label: "Yes" },
+    { v: "maybe", label: "Maybe" },
+    { v: "no", label: "No" },
   ];
 
   return (
     <div className="flex items-center gap-1.5 mt-3">
       <span className="text-xs text-muted-foreground mr-1">RSVP:</span>
       {opts.map((o) => (
-        <Button key={o.v} size="sm" variant={current === o.v ? "default" : "outline"}
+        <Button
+          key={o.v}
+          size="sm"
+          variant={current === o.v ? "default" : "outline"}
           className="h-7 text-xs px-2.5"
-          onClick={() => setStatus.mutate(o.v)} disabled={setStatus.isPending}>
+          onClick={() => setStatus.mutate(o.v)}
+          disabled={setStatus.isPending}
+        >
           {o.label}
         </Button>
       ))}

@@ -9,10 +9,10 @@ Built with **TanStack Start (React 19 + Vite)**, **Tailwind CSS v4**, **shadcn/u
 ## Features
 
 - **Auth & roles**: email/password + Google OAuth. Roles stored in a separate `user_roles` table (admin / teacher / student / parent).
-- **Admin**: create school-wide announcements & meetings, manage user roles, view notification audit log.
+- **Admin**: create school-wide announcements & meetings, manage user roles, add student health records, view notification audit log.
 - **Teachers**: create classes (join code), assignments, assessments, enter scores; per-class announcements.
 - **Students**: join class by code, view assignments/assessments, submit work, see class rankings.
-- **Parents**: link to child by parent code, see all child classes, school news, meetings, assessments, rankings; RSVP to meetings.
+- **Parents**: link to child by parent or student code, see child health records, classes, school news, meetings, assessments, rankings; RSVP to meetings.
 - **Notifications**: in-app bell with realtime updates; per-user preferences (announcements / grades / messages); audit log records delivery for every recipient.
 - **Realtime**: notifications and meeting RSVP attendee lists update live.
 
@@ -32,7 +32,7 @@ bun install
 bun dev
 ```
 
-The app runs at http://localhost:8080. Create a `.env` file in the project root (copy `.env.example`) with:
+The app runs at http://localhost:8080. Create a `.env` file in the `Edubridge` project root (copy `.env.example`) with:
 
 ```
 VITE_SUPABASE_URL=...
@@ -42,14 +42,39 @@ VITE_SUPABASE_PROJECT_ID=...
 SUPABASE_URL=...
 SUPABASE_PUBLISHABLE_KEY=...
 SUPABASE_SERVICE_ROLE_KEY=...            # NEVER expose to the browser
+RESEND_API_KEY=...                       # Server-only; required for student code emails
+EMAIL_FROM=EduBridge <noreply@your-domain.example> # Must be a verified Resend sender
 ```
+
+Account creation by an administrator requires `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`. Get the service-role secret from Supabase Dashboard → Project Settings → API, put it only in the server-side `.env` file, and restart the dev server. The publishable/anon key is not a substitute. Never paste the service-role key into chat, client-side `VITE_*` variables, or source control.
+
+When creating a student account, enter the email of an existing parent account. EduBridge emails that parent the student's linking code using Resend. Create a Resend API key, verify the sender's domain in Resend, and configure `RESEND_API_KEY` and `EMAIL_FROM` (for example, `EduBridge <noreply@your-verified-domain.example>`) on the server first; do not prefix either with `VITE_`. For local development, place these in `Edubridge/.env` and restart Vite. For deployment, add them as server-side environment variables in the hosting provider.
+
+The parent can enter the emailed student code under **My children → Link a child by code**. Apply the `20261018100000_parent_link_by_student_code.sql` migration to Supabase so both the new student code and the older parent code are accepted by the linking and invite-preview functions.
+
+The home page (`/`) links to the Student, Parent, and Teacher sign-in portals at `/login/student`, `/login/parent`, and `/login/teacher`. Accounts are provisioned by an administrator; there is no public registration or public admin sign-up. The private administrator sign-in page is `/admin-login` and is intentionally not linked from the public home page. The development server prints both the main app URL and the admin sign-in URL in the terminal at startup. All portals use the existing Supabase email/password authentication and verify the account's assigned role before routing to its dashboard.
+
+### First administrator account
+
+There is no public administrator signup. To bootstrap the first administrator, create a user in Supabase Dashboard → Authentication → Users → Add user, then copy that user's UUID. In Supabase SQL Editor, replace the placeholder below and run it. The signup trigger assigns new users the `student` role by default, so delete existing roles before inserting `admin`; otherwise role lookups may find multiple roles.
+
+```sql
+BEGIN;
+DELETE FROM public.user_roles
+WHERE user_id = 'REPLACE-WITH-AUTH-USER-UUID';
+
+INSERT INTO public.user_roles (user_id, role)
+VALUES ('REPLACE-WITH-AUTH-USER-UUID', 'admin');
+COMMIT;
+```
+
+Then sign in at `/admin-login`. Keep service-role credentials in server-only environment variables; never put them in browser code or share them publicly.
 
 Useful scripts: `npm run build` (production build), `npm run preview` (serve the build), `npm run lint`.
 
 > **GitHub Pages is not supported.** Pages only serves static files, and this app is a
 > server-rendered TanStack Start application with server functions. Use Vercel (below),
 > Netlify, or Cloudflare Workers instead.
-
 
 ---
 
@@ -108,6 +133,7 @@ This is a TanStack Start app on Vite; it deploys to Vercel as a standard Vite + 
 - `.lovable/`, anything starting with `lovable.` in config
 
 What stays unchanged:
+
 - All migrations in `supabase/migrations/`
 - `src/integrations/supabase/client.ts`, `client.server.ts`, `auth-middleware.ts`, `auth-attacher.ts`, `types.ts`
 - All routes, components, and server functions

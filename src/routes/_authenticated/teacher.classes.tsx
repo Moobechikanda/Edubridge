@@ -62,7 +62,9 @@ function TeacherClasses() {
       <div className="mb-6 flex items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">My classes</h1>
-          <p className="text-muted-foreground mt-1 text-sm">Classes assigned to you by the administrator.</p>
+          <p className="text-muted-foreground mt-1 text-sm">
+            Classes assigned to you by the administrator.
+          </p>
         </div>
       </div>
 
@@ -86,9 +88,7 @@ function TeacherClasses() {
                   >
                     {c.name}
                   </Link>
-                  {c.subject && (
-                    <div className="text-sm text-muted-foreground">{c.subject}</div>
-                  )}
+                  {c.subject && <div className="text-sm text-muted-foreground">{c.subject}</div>}
                   {c.grade_level && (
                     <div className="text-sm text-muted-foreground">Grade {c.grade_level}</div>
                   )}
@@ -148,7 +148,7 @@ function ClassFormDialog({ initial, onClose }: { initial: ClassRow | null; onClo
       qc.invalidateQueries({ queryKey: ["teacher-classes"] });
       onClose();
     },
-    onError: (e: any) => toast.error(e.message ?? "Save failed"),
+    onError: (e: Error) => toast.error(e.message || "Save failed"),
   });
 
   return (
@@ -163,7 +163,12 @@ function ClassFormDialog({ initial, onClose }: { initial: ClassRow | null; onClo
         </div>
         <div className="space-y-2">
           <Label htmlFor="subject">Subject</Label>
-          <Input id="subject" value={subject} onChange={(e) => setSubject(e.target.value)} maxLength={100} />
+          <Input
+            id="subject"
+            value={subject}
+            onChange={(e) => setSubject(e.target.value)}
+            maxLength={100}
+          />
         </div>
         <div className="space-y-2">
           <Label>Grade</Label>

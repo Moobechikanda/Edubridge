@@ -45,7 +45,12 @@ function AuditLog() {
   const [kind, setKind] = useState<string>("all");
   const [status, setStatus] = useState<string>("all");
 
-  const { data: rows = [], isLoading, refetch, isFetching } = useQuery({
+  const {
+    data: rows = [],
+    isLoading,
+    refetch,
+    isFetching,
+  } = useQuery({
     queryKey: ["notif-audit", kind, status],
     queryFn: async () => {
       let q = supabase
@@ -66,10 +71,7 @@ function AuditLog() {
     queryKey: ["audit-names", userIds.join(",")],
     enabled: userIds.length > 0,
     queryFn: async () => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("id, full_name")
-        .in("id", userIds);
+      const { data } = await supabase.from("profiles").select("id, full_name").in("id", userIds);
       const m: Record<string, string> = {};
       (data ?? []).forEach((p) => {
         m[p.id] = p.full_name ?? "—";
@@ -106,12 +108,7 @@ function AuditLog() {
               <SelectItem value="skipped">Skipped (opt-out)</SelectItem>
             </SelectContent>
           </Select>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => refetch()}
-            disabled={isFetching}
-          >
+          <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching}>
             <RefreshCw className="h-4 w-4 mr-2" /> Refresh
           </Button>
           <span className="text-sm text-muted-foreground ml-auto">
@@ -147,9 +144,7 @@ function AuditLog() {
                       {r.delivered ? "Delivered" : "Skipped"}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {r.reason ?? "—"}
-                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{r.reason ?? "—"}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

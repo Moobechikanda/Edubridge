@@ -8,7 +8,27 @@ import { Label } from "@/components/ui/label";
 import { PortalShell } from "../_authenticated";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
-import { Baby, BookOpen, Bell, ClipboardCheck, Contact2, TriangleAlert, User, ClipboardList, TrendingUp } from "lucide-react";
+import {
+  Baby,
+  BookOpen,
+  Bell,
+  ClipboardCheck,
+  Contact2,
+  CalendarDays,
+  MessageSquare,
+  Mail,
+  Newspaper,
+  Megaphone,
+  Phone,
+  TriangleAlert,
+  User,
+  Users,
+  Wallet,
+  Settings,
+  ClipboardList,
+  TrendingUp,
+  type LucideIcon,
+} from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/parent/")({
@@ -87,10 +107,7 @@ function ParentOverview() {
         .eq("parent_id", user!.id);
       const ids = (links ?? []).map((l) => l.student_id);
       if (ids.length === 0) return [];
-      const { data } = await supabase
-        .from("profiles")
-        .select("id, full_name")
-        .in("id", ids);
+      const { data } = await supabase.from("profiles").select("id, full_name").in("id", ids);
       return data ?? [];
     },
   });
@@ -113,33 +130,51 @@ function ParentOverview() {
         .from("enrollments")
         .select("class_id, classes(id, name, subject, teacher_id)")
         .eq("student_id", selectedChildId!);
-      const clsIds = (enr ?? []).map((e) => (e as any).classes?.id).filter(Boolean);
-      const teacherIds = Array.from(new Set((enr ?? []).map((e) => (e as any).classes?.teacher_id).filter(Boolean)));
-      const [{ data: teachers }, { data: assignments }, { data: subs }, { data: anns }] = await Promise.all([
-        teacherIds.length ? supabase.from("profiles").select("id, full_name").in("id", teacherIds) : { data: [] as any[] },
-        clsIds.length ? supabase.from("assignments").select("id, title, due_date, points, class_id, classes(name)").in("class_id", clsIds) : { data: [] as any[] },
-        supabase.from("submissions").select("assignment_id, grade, submitted_at").eq("student_id", selectedChildId!),
-        supabase.from("announcements").select("id, title, created_at").gte("created_at", new Date(Date.now() - 7 * 86400000).toISOString()),
-      ]);
+      const clsIds = (enr ?? []).map((e) => e.classes?.id).filter(Boolean);
+      const teacherIds = Array.from(
+        new Set((enr ?? []).map((e) => e.classes?.teacher_id).filter(Boolean)),
+      );
+      const [{ data: teachers }, { data: assignments }, { data: subs }, { data: anns }] =
+        await Promise.all([
+          teacherIds.length
+            ? supabase.from("profiles").select("id, full_name").in("id", teacherIds)
+            : { data: [] },
+          clsIds.length
+            ? supabase
+                .from("assignments")
+                .select(
+                  "id, title, assignment_type, due_date, points, class_id, classes(name, subject, teacher_id)",
+                )
+                .in("class_id", clsIds)
+            : { data: [] },
+          supabase
+            .from("submissions")
+            .select("assignment_id, grade, submitted_at, feedback")
+            .eq("student_id", selectedChildId!),
+          supabase
+            .from("announcements")
+            .select("id, title, created_at")
+            .gte("created_at", new Date(Date.now() - 7 * 86400000).toISOString()),
+        ]);
       const teacherMap = new Map((teachers ?? []).map((t) => [t.id, t.full_name]));
       const subMap = new Map((subs ?? []).map((s) => [s.assignment_id, s]));
       const now = Date.now();
-      const pending = (assignments ?? []).filter((a: any) => {
+      const pending = (assignments ?? []).filter((a) => {
         const sub = subMap.get(a.id);
         if (sub) return false;
         return !a.due_date || new Date(a.due_date).getTime() > now;
       });
-      const missed = (assignments ?? []).filter((a: any) => {
+      const missed = (assignments ?? []).filter((a) => {
         const sub = subMap.get(a.id);
         return !sub && a.due_date && new Date(a.due_date).getTime() < now;
       });
-      const upcoming = (assignments ?? []).filter((a: any) => {
+      const upcoming = (assignments ?? []).filter((a) => {
         const sub = subMap.get(a.id);
         if (sub) return false;
         const due = a.due_date ? new Date(a.due_date).getTime() : 0;
         return due > now && due < now + 7 * 86400000;
       });
-      const completed = (assignments ?? []).filter((a: any) => subMap.get(a.id)?.grade != null);
+      const completed = (assignments ?? []).filter((a) => subMap.get(a.id)?.grade != null);
       const grades = (subs ?? []).filter((s) => s.grade != null).map((s) => Number(s.grade));
       const avg = grades.length ? grades.reduce((a, b) => a + b, 0) / grades.length : null;
 
@@ -152,7 +187,7 @@ function ParentOverview() {
         avgGrade: avg,
         announcements: (anns ?? []).length,
         teachers: teacherMap,
-        assignments: (assignments ?? []).map((a: any) => ({ ...a, submission: subMap.get(a.id) })),
+        assignments: (assignments ?? []).map((a) => ({ ...a, submission: subMap.get(a.id) })),
       };
     },
   });
@@ -174,8 +209,24 @@ function ParentOverview() {
   return (
     <PortalShell
       title="Parent portal"
-      subtitle={selectedChild ? `Viewing progress for ${selectedChild.full_name}` : "Stay connected with your child's school journey."}
+      subtitle={
+        selectedChild
+          ? `Viewing progress for ${selectedChild.full_name}`
+          : "Stay connected with your child's school journey."
+      }
     >
+      <section aria-label="Parent services" className="mb-6">
+        <div className="grid grid-cols-3 gap-2 sm:gap-3">
+          <ParentShortcut to="/parent/children" label="My Students" icon={Users} />
+          <ParentShortcut to="/parent/announcements" label="Announcements" icon={Megaphone} />
+          <ParentShortcut to="/parent/fees" label="Finance" icon={Wallet} />
+          <ParentShortcut to="/calendar" label="Calendar" icon={CalendarDays} />
+          <ParentShortcut to="/news" label="News" icon={Newspaper} />
+          <ParentShortcut to="/messages" label="Messages" icon={MessageSquare} />
+          <ParentShortcut to="/settings/notifications" label="Settings" icon={Settings} />
+        </div>
+      </section>
+
       {children.length > 1 && (
         <div className="mb-6 flex flex-wrap gap-2">
           {children.map((c) => (
@@ -191,11 +242,81 @@ function ParentOverview() {
         </div>
       )}
 
+      <Card className="mb-6 p-6">
+        <h2 className="font-semibold mb-1 flex items-center gap-2">
+          <Contact2 className="h-4 w-4" /> Your child&apos;s teachers
+        </h2>
+        <p className="mb-4 text-sm text-muted-foreground">
+          Contact details shared by teachers of your linked students.
+        </p>
+        {teacherContacts.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            No teacher contacts are available yet. Make sure your child is linked to your account
+            and enrolled in a teacher&apos;s class.
+          </p>
+        ) : (
+          <ul className="grid gap-3 sm:grid-cols-2">
+            {teacherContacts.map((teacher) => (
+              <li key={teacher.id} className="rounded-lg border p-4">
+                <div className="font-medium">{teacher.full_name || "Teacher"}</div>
+                {teacher.related_class_names && (
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    {teacher.related_class_names}
+                  </div>
+                )}
+                <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-sm">
+                  {teacher.contact_email && (
+                    <a
+                      className="inline-flex items-center gap-1 text-primary hover:underline"
+                      href={`mailto:${teacher.contact_email}`}
+                    >
+                      <Mail className="h-4 w-4" /> Email
+                    </a>
+                  )}
+                  {teacher.contact_phone && (
+                    <a
+                      className="inline-flex items-center gap-1 text-primary hover:underline"
+                      href={`tel:${teacher.contact_phone}`}
+                    >
+                      <Phone className="h-4 w-4" /> {teacher.contact_phone}
+                    </a>
+                  )}
+                  {teacher.contact_whatsapp && (
+                    <a
+                      className="inline-flex items-center gap-1 text-primary hover:underline"
+                      href={`https://wa.me/${teacher.contact_whatsapp.replace(/\D/g, "")}`}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      WhatsApp
+                    </a>
+                  )}
+                  <Link
+                    className="inline-flex items-center gap-1 text-primary hover:underline"
+                    to="/messages"
+                    search={{ contact: teacher.id }}
+                  >
+                    <MessageSquare className="h-4 w-4" /> Message
+                  </Link>
+                </div>
+                {!teacher.contact_email && !teacher.contact_phone && !teacher.contact_whatsapp && (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    No direct contact details provided. You can still message this teacher here.
+                  </p>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
+
       {!selectedChild ? (
         <Card className="p-10 text-center text-muted-foreground">
           Link a child to view their progress.
           <div className="mt-3">
-            <Link to="/parent/children" className="text-primary hover:underline">Link a child</Link>
+            <Link to="/parent/children" className="text-primary hover:underline">
+              Link a child
+            </Link>
           </div>
         </Card>
       ) : (
@@ -203,8 +324,17 @@ function ParentOverview() {
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
             <Stat icon={BookOpen} label="Classes" value={childData?.classes ?? "—"} />
             <Stat icon={ClipboardList} label="Pending work" value={childData?.pending ?? "—"} />
-            <Stat icon={TriangleAlert} label="Missed" value={childData?.missed ?? "—"} color="text-destructive" />
-            <Stat icon={TrendingUp} label="Average grade" value={childData?.avgGrade != null ? `${childData.avgGrade.toFixed(1)}%` : "—"} />
+            <Stat
+              icon={TriangleAlert}
+              label="Missed"
+              value={childData?.missed ?? "—"}
+              color="text-destructive"
+            />
+            <Stat
+              icon={TrendingUp}
+              label="Average grade"
+              value={childData?.avgGrade != null ? `${childData.avgGrade.toFixed(1)}%` : "—"}
+            />
           </div>
 
           <div className="grid gap-6 lg:grid-cols-3">
@@ -216,17 +346,31 @@ function ParentOverview() {
                 <div className="space-y-4">
                   {childData.assignments?.length ? (
                     <div className="grid gap-3">
-                      {Array.from(new Map(childData.assignments.map((a: any) => [a.class_id, a.classes])).entries()).map(([classId, cls]: [string, any]) => {
-                        const teacherName = childData.teachers?.get((cls as any)?.teacher_id) || "Not available";
+                      {Array.from(
+                        new Map(
+                          childData.assignments.map((a) => [a.class_id, a.classes] as const),
+                        ).entries(),
+                      ).map(([classId, cls]) => {
+                        const teacherName =
+                          childData.teachers?.get(cls?.teacher_id) || "Not available";
                         return (
-                          <div key={classId} className="flex items-start justify-between p-3 rounded-md bg-muted/30">
+                          <div
+                            key={classId}
+                            className="flex items-start justify-between p-3 rounded-md bg-muted/30"
+                          >
                             <div>
                               <div className="font-medium">{cls?.name}</div>
-                              {cls?.subject && <div className="text-sm text-muted-foreground">{cls.subject}</div>}
-                              <div className="text-xs text-muted-foreground mt-1">Teacher: {teacherName}</div>
+                              {cls?.subject && (
+                                <div className="text-sm text-muted-foreground">{cls.subject}</div>
+                              )}
+                              <div className="text-xs text-muted-foreground mt-1">
+                                Teacher: {teacherName}
+                              </div>
                             </div>
                             <Button asChild size="sm" variant="ghost">
-                              <Link to="/messages" search={{ contact: (cls as any)?.teacher_id }}>Message</Link>
+                              <Link to="/messages" search={{ contact: cls?.teacher_id }}>
+                                Message
+                              </Link>
                             </Button>
                           </div>
                         );
@@ -250,17 +394,33 @@ function ParentOverview() {
                 <div className="space-y-3">
                   <div className="space-y-1">
                     <Label>Email address</Label>
-                    <Input value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} placeholder="parent@email.com" />
+                    <Input
+                      value={contactEmail}
+                      onChange={(e) => setContactEmail(e.target.value)}
+                      placeholder="parent@email.com"
+                    />
                   </div>
                   <div className="space-y-1">
                     <Label>Phone number</Label>
-                    <Input value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} placeholder="+260 ..." />
+                    <Input
+                      value={contactPhone}
+                      onChange={(e) => setContactPhone(e.target.value)}
+                      placeholder="+260 ..."
+                    />
                   </div>
                   <div className="space-y-1">
                     <Label>WhatsApp</Label>
-                    <Input value={contactWhatsapp} onChange={(e) => setContactWhatsapp(e.target.value)} placeholder="+260 ..." />
+                    <Input
+                      value={contactWhatsapp}
+                      onChange={(e) => setContactWhatsapp(e.target.value)}
+                      placeholder="+260 ..."
+                    />
                   </div>
-                  <Button onClick={() => saveContact.mutate()} disabled={saveContact.isPending} className="w-full">
+                  <Button
+                    onClick={() => saveContact.mutate()}
+                    disabled={saveContact.isPending}
+                    className="w-full"
+                  >
                     {saveContact.isPending ? "Saving..." : "Save contact details"}
                   </Button>
                 </div>
@@ -269,14 +429,18 @@ function ParentOverview() {
               <Card className="p-6">
                 <h2 className="font-semibold mb-4">Important notices</h2>
                 {parentNotices.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No outstanding fees or upcoming events posted.</p>
+                  <p className="text-sm text-muted-foreground">
+                    No outstanding fees or upcoming events posted.
+                  </p>
                 ) : (
                   <ul className="divide-y">
                     {parentNotices.map((n) => (
                       <li key={n.id} className="py-2">
                         <div className="text-xs uppercase text-muted-foreground">{n.category}</div>
                         <div className="font-medium text-sm">{n.title}</div>
-                        <div className="text-xs text-muted-foreground">{new Date(n.publish_at).toLocaleString()}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {new Date(n.publish_at).toLocaleString()}
+                        </div>
                       </li>
                     ))}
                   </ul>
@@ -291,11 +455,19 @@ function ParentOverview() {
               <p className="text-sm text-muted-foreground">No assignments yet.</p>
             ) : (
               <div className="grid gap-3">
-                {childData.assignments.slice(0, 20).map((a: any) => {
+                {childData.assignments.slice(0, 20).map((a) => {
                   const s = a.submission;
-                  const status = s?.grade != null ? `Graded: ${s.grade}/${a.points}` : s ? "Submitted" : "Not submitted";
+                  const status =
+                    s?.grade != null
+                      ? `Graded: ${s.grade}/${a.points}`
+                      : s
+                        ? "Submitted"
+                        : "Not submitted";
                   return (
-                    <div key={a.id} className="flex items-center justify-between p-3 rounded-md bg-muted/30">
+                    <div
+                      key={a.id}
+                      className="flex items-center justify-between p-3 rounded-md bg-muted/30"
+                    >
                       <div>
                         <div className="font-medium text-sm">{a.title}</div>
                         <div className="text-xs text-muted-foreground">
@@ -317,7 +489,44 @@ function ParentOverview() {
   );
 }
 
-function Stat({ icon: Icon, label, value, color }: { icon: any; label: string; value: string | number; color?: string }) {
+function ParentShortcut({
+  to,
+  label,
+  icon: Icon,
+}: {
+  to:
+    | "/parent/children"
+    | "/parent/announcements"
+    | "/parent/fees"
+    | "/calendar"
+    | "/news"
+    | "/messages"
+    | "/settings/notifications";
+  label: string;
+  icon: LucideIcon;
+}) {
+  return (
+    <Link
+      to={to}
+      className="flex min-h-20 flex-col items-center justify-center gap-2 rounded-lg border bg-card px-2 py-3 text-center text-sm font-medium text-foreground transition-colors hover:bg-accent/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+    >
+      <Icon className="h-5 w-5 text-primary" aria-hidden="true" />
+      <span>{label}</span>
+    </Link>
+  );
+}
+
+function Stat({
+  icon: Icon,
+  label,
+  value,
+  color,
+}: {
+  icon: LucideIcon;
+  label: string;
+  value: string | number;
+  color?: string;
+}) {
   return (
     <Card className="p-5">
       <div className="flex items-center justify-between">

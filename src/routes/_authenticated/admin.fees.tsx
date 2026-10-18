@@ -36,10 +36,11 @@ function AdminFeesPage() {
   const { data: students = [] } = useQuery({
     queryKey: ["fee-students"],
     queryFn: async () => {
-      const [{ data: roles, error: rolesError }, { data: profiles, error: profileError }] = await Promise.all([
-        supabase.from("user_roles").select("user_id").eq("role", "student"),
-        supabase.from("profiles").select("id, full_name"),
-      ]);
+      const [{ data: roles, error: rolesError }, { data: profiles, error: profileError }] =
+        await Promise.all([
+          supabase.from("user_roles").select("user_id").eq("role", "student"),
+          supabase.from("profiles").select("id, full_name"),
+        ]);
       if (rolesError) throw rolesError;
       if (profileError) throw profileError;
       const studentIds = new Set((roles ?? []).map((r) => r.user_id));
@@ -97,7 +98,15 @@ function AdminFeesPage() {
   });
 
   const updateFee = useMutation({
-    mutationFn: async ({ id, status, amountPaid }: { id: string; status: string; amountPaid: number }) => {
+    mutationFn: async ({
+      id,
+      status,
+      amountPaid,
+    }: {
+      id: string;
+      status: string;
+      amountPaid: number;
+    }) => {
       const { error } = await supabase
         .from("student_fees")
         .update({ status, amount_paid: amountPaid })
@@ -137,26 +146,46 @@ function AdminFeesPage() {
             >
               <option value="">Select student</option>
               {students.map((s) => (
-                <option key={s.id} value={s.id}>{s.full_name || "Student"}</option>
+                <option key={s.id} value={s.id}>
+                  {s.full_name || "Student"}
+                </option>
               ))}
             </select>
           </div>
           <div className="space-y-1">
             <Label>Title</Label>
-            <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Tuition term 3" />
+            <Input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Tuition term 3"
+            />
           </div>
           <div className="space-y-1">
             <Label>Description</Label>
-            <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} placeholder="Payment instructions, bank details..." />
+            <Textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={3}
+              placeholder="Payment instructions, bank details..."
+            />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <Label>Amount</Label>
-              <Input type="number" min={0} value={amount} onChange={(e) => setAmount(e.target.value)} />
+              <Input
+                type="number"
+                min={0}
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+              />
             </div>
             <div className="space-y-1">
               <Label>Currency</Label>
-              <Input value={currency} onChange={(e) => setCurrency(e.target.value.toUpperCase())} maxLength={8} />
+              <Input
+                value={currency}
+                onChange={(e) => setCurrency(e.target.value.toUpperCase())}
+                maxLength={8}
+              />
             </div>
           </div>
           <div className="space-y-1">
@@ -187,7 +216,9 @@ function AdminFeesPage() {
                   dueDate={f.due_date}
                   status={f.status}
                   remaining={remaining}
-                  onUpdate={(status, amountPaid) => updateFee.mutate({ id: f.id, status, amountPaid })}
+                  onUpdate={(status, amountPaid) =>
+                    updateFee.mutate({ id: f.id, status, amountPaid })
+                  }
                   onDelete={() => removeFee.mutate(f.id)}
                 />
               );
@@ -234,11 +265,16 @@ function FeeRow({
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1">
           <div className="font-semibold">{title}</div>
-          <div className="text-xs text-muted-foreground mt-0.5">{student} · due {new Date(dueDate).toLocaleDateString()}</div>
-          <div className="text-sm mt-2">
-            {currency} {amount.toFixed(2)} · Paid {currency} {amountPaid.toFixed(2)} · Remaining {currency} {Math.max(remaining, 0).toFixed(2)}
+          <div className="text-xs text-muted-foreground mt-0.5">
+            {student} · due {new Date(dueDate).toLocaleDateString()}
           </div>
-          {description && <p className="text-sm text-muted-foreground mt-2 whitespace-pre-wrap">{description}</p>}
+          <div className="text-sm mt-2">
+            {currency} {amount.toFixed(2)} · Paid {currency} {amountPaid.toFixed(2)} · Remaining{" "}
+            {currency} {Math.max(remaining, 0).toFixed(2)}
+          </div>
+          {description && (
+            <p className="text-sm text-muted-foreground mt-2 whitespace-pre-wrap">{description}</p>
+          )}
 
           <div className="mt-3 grid grid-cols-1 sm:grid-cols-[180px_160px_auto] gap-2 items-end">
             <div>
@@ -256,7 +292,12 @@ function FeeRow({
             </div>
             <div>
               <Label className="text-xs">Amount paid</Label>
-              <Input type="number" min={0} value={localPaid} onChange={(e) => setLocalPaid(e.target.value)} />
+              <Input
+                type="number"
+                min={0}
+                value={localPaid}
+                onChange={(e) => setLocalPaid(e.target.value)}
+              />
             </div>
             <Button
               variant="outline"

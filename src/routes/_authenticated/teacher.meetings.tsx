@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
 import { ChevronDown, Trash2, Users } from "lucide-react";
+import type { Database } from "@/integrations/supabase/types";
 
 export const Route = createFileRoute("/_authenticated/teacher/meetings")({
   component: TeacherMeetings,
@@ -29,7 +30,9 @@ function TeacherMeetings() {
     queryKey: ["teacher-meetings-all"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("meetings").select("*").order("scheduled_at", { ascending: false });
+        .from("meetings")
+        .select("*")
+        .order("scheduled_at", { ascending: false });
       if (error) throw error;
       return data ?? [];
     },
@@ -49,7 +52,10 @@ function TeacherMeetings() {
     },
     onSuccess: () => {
       toast.success("Meeting scheduled");
-      setTitle(""); setDescription(""); setScheduledAt(""); setLocation("");
+      setTitle("");
+      setDescription("");
+      setScheduledAt("");
+      setLocation("");
       qc.invalidateQueries({ queryKey: ["teacher-meetings-all"] });
       qc.invalidateQueries({ queryKey: ["meetings-upcoming"] });
     },
@@ -69,7 +75,10 @@ function TeacherMeetings() {
   });
 
   return (
-    <PortalShell title="Parent–teacher meetings" subtitle="Schedule meetings and see who has RSVPed.">
+    <PortalShell
+      title="Parent–teacher meetings"
+      subtitle="Schedule meetings and see who has RSVPed."
+    >
       <div className="grid gap-6 lg:grid-cols-[380px_1fr]">
         <Card className="p-5 space-y-3 h-fit">
           <h2 className="font-semibold">Schedule meeting</h2>
@@ -79,15 +88,28 @@ function TeacherMeetings() {
           </div>
           <div className="space-y-1.5">
             <Label>Date & time</Label>
-            <Input type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} />
+            <Input
+              type="datetime-local"
+              value={scheduledAt}
+              onChange={(e) => setScheduledAt(e.target.value)}
+            />
           </div>
           <div className="space-y-1.5">
             <Label>Location</Label>
-            <Input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Room A / Online" />
+            <Input
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              placeholder="Room A / Online"
+            />
           </div>
           <div className="space-y-1.5">
             <Label>Description</Label>
-            <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} maxLength={2000} />
+            <Textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={4}
+              maxLength={2000}
+            />
           </div>
           <Button onClick={() => schedule.mutate()} disabled={schedule.isPending}>
             {schedule.isPending ? "Scheduling…" : "Schedule"}
@@ -96,29 +118,43 @@ function TeacherMeetings() {
 
         <div className="space-y-3">
           {meetings.length === 0 ? (
-            <Card className="p-8 text-center text-sm text-muted-foreground">No meetings scheduled.</Card>
-          ) : meetings.map((m) => (
-            <MeetingRow
-              key={m.id}
-              meeting={m}
-              canDelete={m.created_by === user?.id}
-              onDelete={() => confirm("Delete this meeting?") && remove.mutate(m.id)}
-            />
-          ))}
+            <Card className="p-8 text-center text-sm text-muted-foreground">
+              No meetings scheduled.
+            </Card>
+          ) : (
+            meetings.map((m) => (
+              <MeetingRow
+                key={m.id}
+                meeting={m}
+                canDelete={m.created_by === user?.id}
+                onDelete={() => confirm("Delete this meeting?") && remove.mutate(m.id)}
+              />
+            ))
+          )}
         </div>
       </div>
     </PortalShell>
   );
 }
 
-function MeetingRow({ meeting, canDelete, onDelete }: { meeting: any; canDelete: boolean; onDelete: () => void }) {
+function MeetingRow({
+  meeting,
+  canDelete,
+  onDelete,
+}: {
+  meeting: Database["public"]["Tables"]["meetings"]["Row"];
+  canDelete: boolean;
+  onDelete: () => void;
+}) {
   const [open, setOpen] = useState(false);
   const qc = useQueryClient();
   const { data: attendees = [] } = useQuery({
     queryKey: ["meeting-attendees", meeting.id],
     enabled: open,
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_meeting_attendees", { _meeting_id: meeting.id });
+      const { data, error } = await supabase.rpc("get_meeting_attendees", {
+        _meeting_id: meeting.id,
+      });
       if (error) throw error;
       return data ?? [];
     },
@@ -128,14 +164,25 @@ function MeetingRow({ meeting, canDelete, onDelete }: { meeting: any; canDelete:
     if (!open) return;
     const ch = supabase
       .channel(`rsvps-${meeting.id}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "meeting_rsvps", filter: `meeting_id=eq.${meeting.id}` },
-        () => qc.invalidateQueries({ queryKey: ["meeting-attendees", meeting.id] }))
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "meeting_rsvps",
+          filter: `meeting_id=eq.${meeting.id}`,
+        },
+        () => qc.invalidateQueries({ queryKey: ["meeting-attendees", meeting.id] }),
+      )
       .subscribe();
-    return () => { supabase.removeChannel(ch); };
+    return () => {
+      supabase.removeChannel(ch);
+    };
   }, [open, meeting.id, qc]);
 
-  const counts = attendees.reduce<Record<string, number>>((acc, a: any) => {
-    acc[a.status] = (acc[a.status] ?? 0) + 1; return acc;
+  const counts = attendees.reduce<Record<string, number>>((acc, a) => {
+    acc[a.status] = (acc[a.status] ?? 0) + 1;
+    return acc;
   }, {});
 
   return (
@@ -151,7 +198,9 @@ function MeetingRow({ meeting, canDelete, onDelete }: { meeting: any; canDelete:
         <div className="flex items-center gap-2">
           <Button size="sm" variant="outline" onClick={() => setOpen((v) => !v)}>
             <Users className="h-3.5 w-3.5 mr-1" /> Attendees
-            <ChevronDown className={`h-3.5 w-3.5 ml-1 transition-transform ${open ? "rotate-180" : ""}`} />
+            <ChevronDown
+              className={`h-3.5 w-3.5 ml-1 transition-transform ${open ? "rotate-180" : ""}`}
+            />
           </Button>
           {canDelete && (
             <Button size="icon" variant="ghost" onClick={onDelete} aria-label="Delete meeting">
@@ -163,20 +212,36 @@ function MeetingRow({ meeting, canDelete, onDelete }: { meeting: any; canDelete:
       {open && (
         <div className="mt-4 border-t pt-3">
           <div className="flex gap-2 text-xs mb-3">
-            <Badge variant="secondary" className="bg-green-500/10 text-green-700 dark:text-green-300">Yes · {counts.yes ?? 0}</Badge>
-            <Badge variant="secondary" className="bg-amber-500/10 text-amber-700 dark:text-amber-300">Maybe · {counts.maybe ?? 0}</Badge>
-            <Badge variant="secondary" className="bg-red-500/10 text-red-700 dark:text-red-300">No · {counts.no ?? 0}</Badge>
+            <Badge
+              variant="secondary"
+              className="bg-green-500/10 text-green-700 dark:text-green-300"
+            >
+              Yes · {counts.yes ?? 0}
+            </Badge>
+            <Badge
+              variant="secondary"
+              className="bg-amber-500/10 text-amber-700 dark:text-amber-300"
+            >
+              Maybe · {counts.maybe ?? 0}
+            </Badge>
+            <Badge variant="secondary" className="bg-red-500/10 text-red-700 dark:text-red-300">
+              No · {counts.no ?? 0}
+            </Badge>
           </div>
           {attendees.length === 0 ? (
             <p className="text-sm text-muted-foreground">No RSVPs yet.</p>
           ) : (
             <ul className="divide-y text-sm">
-              {attendees.map((a: any) => (
+              {attendees.map((a) => (
                 <li key={a.user_id} className="py-2 flex items-center justify-between gap-3">
                   <span className="font-medium">{a.full_name || "—"}</span>
                   <div className="flex items-center gap-2">
-                    {a.note && <span className="text-xs text-muted-foreground italic">"{a.note}"</span>}
-                    <Badge variant="outline" className="capitalize">{a.status}</Badge>
+                    {a.note && (
+                      <span className="text-xs text-muted-foreground italic">"{a.note}"</span>
+                    )}
+                    <Badge variant="outline" className="capitalize">
+                      {a.status}
+                    </Badge>
                   </div>
                 </li>
               ))}

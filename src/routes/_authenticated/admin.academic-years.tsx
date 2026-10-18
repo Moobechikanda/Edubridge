@@ -13,7 +13,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { PortalShell } from "../_authenticated";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
@@ -90,7 +96,10 @@ function AdminAcademicYears() {
         is_current: isCurrent,
       };
       if (editing) {
-        const { error } = await supabase.from("academic_years").update(payload).eq("id", editing.id);
+        const { error } = await supabase
+          .from("academic_years")
+          .update(payload)
+          .eq("id", editing.id);
         if (error) throw error;
       } else {
         const { error } = await supabase.from("academic_years").insert(payload);
@@ -102,7 +111,12 @@ function AdminAcademicYears() {
       qc.invalidateQueries({ queryKey: ["admin-academic-years"] });
       setOpen(false);
       setEditing(null);
-      setSchoolId(""); setName(""); setCode(""); setStartDate(""); setEndDate(""); setIsCurrent(false);
+      setSchoolId("");
+      setName("");
+      setCode("");
+      setStartDate("");
+      setEndDate("");
+      setIsCurrent(false);
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -131,13 +145,20 @@ function AdminAcademicYears() {
     } else {
       setEditing(null);
       setSchoolId(schools[0]?.id ?? "");
-      setName(""); setCode(""); setStartDate(""); setEndDate(""); setIsCurrent(false);
+      setName("");
+      setCode("");
+      setStartDate("");
+      setEndDate("");
+      setIsCurrent(false);
     }
     setOpen(true);
   };
 
   return (
-    <PortalShell title="Academic years" subtitle="Define academic years and associate them with schools.">
+    <PortalShell
+      title="Academic years"
+      subtitle="Define academic years and associate them with schools."
+    >
       <div className="mb-4 flex justify-end">
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
@@ -161,7 +182,9 @@ function AdminAcademicYears() {
                     </SelectTrigger>
                     <SelectContent>
                       {schools.map((s) => (
-                        <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                        <SelectItem key={s.id} value={s.id}>
+                          {s.name}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -180,7 +203,11 @@ function AdminAcademicYears() {
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label>Start date</Label>
-                  <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+                  <Input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                  />
                 </div>
                 <div className="space-y-1.5">
                   <Label>End date</Label>
@@ -198,7 +225,9 @@ function AdminAcademicYears() {
               </label>
             </div>
             <DialogFooter>
-              <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
+              <Button variant="ghost" onClick={() => setOpen(false)}>
+                Cancel
+              </Button>
               <Button onClick={() => save.mutate()} disabled={save.isPending}>
                 {save.isPending ? "Saving…" : "Save"}
               </Button>
@@ -230,9 +259,12 @@ function AdminAcademicYears() {
               {years.map((y) => (
                 <tr key={y.id}>
                   <td className="px-4 py-3 font-medium">{y.name}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{schoolMap.get(y.school_id) ?? "—"}</td>
                   <td className="px-4 py-3 text-muted-foreground">
-                    {new Date(y.start_date).toLocaleDateString()} — {new Date(y.end_date).toLocaleDateString()}
+                    {schoolMap.get(y.school_id) ?? "—"}
+                  </td>
+                  <td className="px-4 py-3 text-muted-foreground">
+                    {new Date(y.start_date).toLocaleDateString()} —{" "}
+                    {new Date(y.end_date).toLocaleDateString()}
                   </td>
                   <td className="px-4 py-3">
                     {y.is_current ? (

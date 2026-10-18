@@ -13,7 +13,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { PortalShell } from "../_authenticated";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
@@ -69,10 +75,7 @@ function AdminTerms() {
   const { data: terms = [], isLoading } = useQuery({
     queryKey: ["admin-terms"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("terms")
-        .select("*")
-        .order("sort_order");
+      const { data, error } = await supabase.from("terms").select("*").order("sort_order");
       if (error) throw error;
       return data as TermRow[];
     },
@@ -108,7 +111,13 @@ function AdminTerms() {
       qc.invalidateQueries({ queryKey: ["admin-terms"] });
       setOpen(false);
       setEditing(null);
-      setAcademicYearId(""); setName(""); setCode(""); setStartDate(""); setEndDate(""); setIsCurrent(false); setSortOrder("0");
+      setAcademicYearId("");
+      setName("");
+      setCode("");
+      setStartDate("");
+      setEndDate("");
+      setIsCurrent(false);
+      setSortOrder("0");
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -138,7 +147,12 @@ function AdminTerms() {
     } else {
       setEditing(null);
       setAcademicYearId(years[0]?.id ?? "");
-      setName(""); setCode(""); setStartDate(""); setEndDate(""); setIsCurrent(false); setSortOrder("0");
+      setName("");
+      setCode("");
+      setStartDate("");
+      setEndDate("");
+      setIsCurrent(false);
+      setSortOrder("0");
     }
     setOpen(true);
   };
@@ -168,7 +182,9 @@ function AdminTerms() {
                     </SelectTrigger>
                     <SelectContent>
                       {years.map((y) => (
-                        <SelectItem key={y.id} value={y.id}>{y.name}</SelectItem>
+                        <SelectItem key={y.id} value={y.id}>
+                          {y.name}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -187,7 +203,11 @@ function AdminTerms() {
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label>Start date</Label>
-                  <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+                  <Input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                  />
                 </div>
                 <div className="space-y-1.5">
                   <Label>End date</Label>
@@ -197,7 +217,12 @@ function AdminTerms() {
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label>Sort order</Label>
-                  <Input type="number" min={0} value={sortOrder} onChange={(e) => setSortOrder(e.target.value)} />
+                  <Input
+                    type="number"
+                    min={0}
+                    value={sortOrder}
+                    onChange={(e) => setSortOrder(e.target.value)}
+                  />
                 </div>
                 <div className="space-y-1.5 flex items-end">
                   <label className="flex items-center gap-2 text-sm">
@@ -213,7 +238,9 @@ function AdminTerms() {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
+              <Button variant="ghost" onClick={() => setOpen(false)}>
+                Cancel
+              </Button>
               <Button onClick={() => save.mutate()} disabled={save.isPending}>
                 {save.isPending ? "Saving…" : "Save"}
               </Button>
@@ -246,9 +273,12 @@ function AdminTerms() {
               {terms.map((t) => (
                 <tr key={t.id}>
                   <td className="px-4 py-3 font-medium">{t.name}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{yearMap.get(t.academic_year_id) ?? "—"}</td>
                   <td className="px-4 py-3 text-muted-foreground">
-                    {new Date(t.start_date).toLocaleDateString()} — {new Date(t.end_date).toLocaleDateString()}
+                    {yearMap.get(t.academic_year_id) ?? "—"}
+                  </td>
+                  <td className="px-4 py-3 text-muted-foreground">
+                    {new Date(t.start_date).toLocaleDateString()} —{" "}
+                    {new Date(t.end_date).toLocaleDateString()}
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">{t.sort_order}</td>
                   <td className="px-4 py-3">

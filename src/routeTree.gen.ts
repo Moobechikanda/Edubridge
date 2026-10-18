@@ -11,19 +11,24 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
+import { Route as AdminLoginRouteImport } from './routes/admin-login'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
+import { Route as AuthenticatedCalendarRouteImport } from './routes/_authenticated/calendar'
 import { Route as AuthenticatedMessagesRouteImport } from './routes/_authenticated/messages'
 import { Route as AuthenticatedNewsRouteImport } from './routes/_authenticated/news'
 import { Route as AuthenticatedParentRouteImport } from './routes/_authenticated/parent'
 import { Route as AuthenticatedStudentRouteImport } from './routes/_authenticated/student'
 import { Route as AuthenticatedTeacherRouteImport } from './routes/_authenticated/teacher'
+import { Route as LoginRoleRouteImport } from './routes/login.$role'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as AuthenticatedAdminAcademicYearsRouteImport } from './routes/_authenticated/admin.academic-years'
 import { Route as AuthenticatedAdminAuditRouteImport } from './routes/_authenticated/admin.audit'
 import { Route as AuthenticatedAdminClassesRouteImport } from './routes/_authenticated/admin.classes'
 import { Route as AuthenticatedAdminEventsRouteImport } from './routes/_authenticated/admin.events'
 import { Route as AuthenticatedAdminFeesRouteImport } from './routes/_authenticated/admin.fees'
+import { Route as AuthenticatedAdminHealthRouteImport } from './routes/_authenticated/admin.health'
 import { Route as AuthenticatedAdminNewsRouteImport } from './routes/_authenticated/admin.news'
 import { Route as AuthenticatedAdminSchoolsRouteImport } from './routes/_authenticated/admin.schools'
 import { Route as AuthenticatedAdminSubjectsRouteImport } from './routes/_authenticated/admin.subjects'
@@ -59,14 +64,29 @@ const AuthenticatedRoute = AuthenticatedRouteImport.update({
   id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminLoginRoute = AdminLoginRouteImport.update({
+  id: '/admin-login',
+  path: '/admin-login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   id: '/admin',
   path: '/admin',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedCalendarRoute = AuthenticatedCalendarRouteImport.update({
+  id: '/calendar',
+  path: '/calendar',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedMessagesRoute = AuthenticatedMessagesRouteImport.update({
@@ -93,6 +113,11 @@ const AuthenticatedTeacherRoute = AuthenticatedTeacherRouteImport.update({
   id: '/teacher',
   path: '/teacher',
   getParentRoute: () => AuthenticatedRoute,
+} as any)
+const LoginRoleRoute = LoginRoleRouteImport.update({
+  id: '/login/$role',
+  path: '/login/$role',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   id: '/',
@@ -127,6 +152,12 @@ const AuthenticatedAdminFeesRoute = AuthenticatedAdminFeesRouteImport.update({
   path: '/fees',
   getParentRoute: () => AuthenticatedAdminRoute,
 } as any)
+const AuthenticatedAdminHealthRoute =
+  AuthenticatedAdminHealthRouteImport.update({
+    id: '/health',
+    path: '/health',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminNewsRoute = AuthenticatedAdminNewsRouteImport.update({
   id: '/news',
   path: '/news',
@@ -276,18 +307,23 @@ const AuthenticatedTeacherClassesClassIdRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin-login': typeof AdminLoginRoute
   '/auth': typeof AuthRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
+  '/calendar': typeof AuthenticatedCalendarRoute
   '/messages': typeof AuthenticatedMessagesRoute
   '/news': typeof AuthenticatedNewsRoute
   '/parent': typeof AuthenticatedParentRouteWithChildren
   '/student': typeof AuthenticatedStudentRouteWithChildren
   '/teacher': typeof AuthenticatedTeacherRouteWithChildren
+  '/login/$role': typeof LoginRoleRoute
   '/admin/academic-years': typeof AuthenticatedAdminAcademicYearsRoute
   '/admin/audit': typeof AuthenticatedAdminAuditRoute
   '/admin/classes': typeof AuthenticatedAdminClassesRoute
   '/admin/events': typeof AuthenticatedAdminEventsRoute
   '/admin/fees': typeof AuthenticatedAdminFeesRoute
+  '/admin/health': typeof AuthenticatedAdminHealthRoute
   '/admin/news': typeof AuthenticatedAdminNewsRoute
   '/admin/schools': typeof AuthenticatedAdminSchoolsRoute
   '/admin/subjects': typeof AuthenticatedAdminSubjectsRoute
@@ -317,14 +353,19 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin-login': typeof AdminLoginRoute
   '/auth': typeof AuthRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/calendar': typeof AuthenticatedCalendarRoute
   '/messages': typeof AuthenticatedMessagesRoute
   '/news': typeof AuthenticatedNewsRoute
+  '/login/$role': typeof LoginRoleRoute
   '/admin/academic-years': typeof AuthenticatedAdminAcademicYearsRoute
   '/admin/audit': typeof AuthenticatedAdminAuditRoute
   '/admin/classes': typeof AuthenticatedAdminClassesRoute
   '/admin/events': typeof AuthenticatedAdminEventsRoute
   '/admin/fees': typeof AuthenticatedAdminFeesRoute
+  '/admin/health': typeof AuthenticatedAdminHealthRoute
   '/admin/news': typeof AuthenticatedAdminNewsRoute
   '/admin/schools': typeof AuthenticatedAdminSchoolsRoute
   '/admin/subjects': typeof AuthenticatedAdminSubjectsRoute
@@ -356,18 +397,23 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
+  '/admin-login': typeof AdminLoginRoute
   '/auth': typeof AuthRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
+  '/_authenticated/calendar': typeof AuthenticatedCalendarRoute
   '/_authenticated/messages': typeof AuthenticatedMessagesRoute
   '/_authenticated/news': typeof AuthenticatedNewsRoute
   '/_authenticated/parent': typeof AuthenticatedParentRouteWithChildren
   '/_authenticated/student': typeof AuthenticatedStudentRouteWithChildren
   '/_authenticated/teacher': typeof AuthenticatedTeacherRouteWithChildren
+  '/login/$role': typeof LoginRoleRoute
   '/_authenticated/admin/academic-years': typeof AuthenticatedAdminAcademicYearsRoute
   '/_authenticated/admin/audit': typeof AuthenticatedAdminAuditRoute
   '/_authenticated/admin/classes': typeof AuthenticatedAdminClassesRoute
   '/_authenticated/admin/events': typeof AuthenticatedAdminEventsRoute
   '/_authenticated/admin/fees': typeof AuthenticatedAdminFeesRoute
+  '/_authenticated/admin/health': typeof AuthenticatedAdminHealthRoute
   '/_authenticated/admin/news': typeof AuthenticatedAdminNewsRoute
   '/_authenticated/admin/schools': typeof AuthenticatedAdminSchoolsRoute
   '/_authenticated/admin/subjects': typeof AuthenticatedAdminSubjectsRoute
@@ -399,18 +445,23 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/admin-login'
     | '/auth'
+    | '/reset-password'
     | '/admin'
+    | '/calendar'
     | '/messages'
     | '/news'
     | '/parent'
     | '/student'
     | '/teacher'
+    | '/login/$role'
     | '/admin/academic-years'
     | '/admin/audit'
     | '/admin/classes'
     | '/admin/events'
     | '/admin/fees'
+    | '/admin/health'
     | '/admin/news'
     | '/admin/schools'
     | '/admin/subjects'
@@ -440,14 +491,19 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/admin-login'
     | '/auth'
+    | '/reset-password'
+    | '/calendar'
     | '/messages'
     | '/news'
+    | '/login/$role'
     | '/admin/academic-years'
     | '/admin/audit'
     | '/admin/classes'
     | '/admin/events'
     | '/admin/fees'
+    | '/admin/health'
     | '/admin/news'
     | '/admin/schools'
     | '/admin/subjects'
@@ -478,18 +534,23 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_authenticated'
+    | '/admin-login'
     | '/auth'
+    | '/reset-password'
     | '/_authenticated/admin'
+    | '/_authenticated/calendar'
     | '/_authenticated/messages'
     | '/_authenticated/news'
     | '/_authenticated/parent'
     | '/_authenticated/student'
     | '/_authenticated/teacher'
+    | '/login/$role'
     | '/_authenticated/admin/academic-years'
     | '/_authenticated/admin/audit'
     | '/_authenticated/admin/classes'
     | '/_authenticated/admin/events'
     | '/_authenticated/admin/fees'
+    | '/_authenticated/admin/health'
     | '/_authenticated/admin/news'
     | '/_authenticated/admin/schools'
     | '/_authenticated/admin/subjects'
@@ -521,7 +582,10 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
+  AdminLoginRoute: typeof AdminLoginRoute
   AuthRoute: typeof AuthRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
+  LoginRoleRoute: typeof LoginRoleRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -540,6 +604,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin-login': {
+      id: '/admin-login'
+      path: '/admin-login'
+      fullPath: '/admin-login'
+      preLoaderRoute: typeof AdminLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth': {
       id: '/auth'
       path: '/auth'
@@ -547,11 +618,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/admin': {
       id: '/_authenticated/admin'
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AuthenticatedAdminRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/calendar': {
+      id: '/_authenticated/calendar'
+      path: '/calendar'
+      fullPath: '/calendar'
+      preLoaderRoute: typeof AuthenticatedCalendarRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/messages': {
@@ -588,6 +673,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/teacher'
       preLoaderRoute: typeof AuthenticatedTeacherRouteImport
       parentRoute: typeof AuthenticatedRoute
+    }
+    '/login/$role': {
+      id: '/login/$role'
+      path: '/login/$role'
+      fullPath: '/login/$role'
+      preLoaderRoute: typeof LoginRoleRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/admin/': {
       id: '/_authenticated/admin/'
@@ -629,6 +721,13 @@ declare module '@tanstack/react-router' {
       path: '/fees'
       fullPath: '/admin/fees'
       preLoaderRoute: typeof AuthenticatedAdminFeesRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/health': {
+      id: '/_authenticated/admin/health'
+      path: '/health'
+      fullPath: '/admin/health'
+      preLoaderRoute: typeof AuthenticatedAdminHealthRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
     '/_authenticated/admin/news': {
@@ -815,6 +914,7 @@ interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminClassesRoute: typeof AuthenticatedAdminClassesRoute
   AuthenticatedAdminEventsRoute: typeof AuthenticatedAdminEventsRoute
   AuthenticatedAdminFeesRoute: typeof AuthenticatedAdminFeesRoute
+  AuthenticatedAdminHealthRoute: typeof AuthenticatedAdminHealthRoute
   AuthenticatedAdminNewsRoute: typeof AuthenticatedAdminNewsRoute
   AuthenticatedAdminSchoolsRoute: typeof AuthenticatedAdminSchoolsRoute
   AuthenticatedAdminSubjectsRoute: typeof AuthenticatedAdminSubjectsRoute
@@ -829,6 +929,7 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminClassesRoute: AuthenticatedAdminClassesRoute,
   AuthenticatedAdminEventsRoute: AuthenticatedAdminEventsRoute,
   AuthenticatedAdminFeesRoute: AuthenticatedAdminFeesRoute,
+  AuthenticatedAdminHealthRoute: AuthenticatedAdminHealthRoute,
   AuthenticatedAdminNewsRoute: AuthenticatedAdminNewsRoute,
   AuthenticatedAdminSchoolsRoute: AuthenticatedAdminSchoolsRoute,
   AuthenticatedAdminSubjectsRoute: AuthenticatedAdminSubjectsRoute,
@@ -963,6 +1064,7 @@ const AuthenticatedTeacherRouteWithChildren =
 
 interface AuthenticatedRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
+  AuthenticatedCalendarRoute: typeof AuthenticatedCalendarRoute
   AuthenticatedMessagesRoute: typeof AuthenticatedMessagesRoute
   AuthenticatedNewsRoute: typeof AuthenticatedNewsRoute
   AuthenticatedParentRoute: typeof AuthenticatedParentRouteWithChildren
@@ -974,6 +1076,7 @@ interface AuthenticatedRouteChildren {
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRouteWithChildren,
+  AuthenticatedCalendarRoute: AuthenticatedCalendarRoute,
   AuthenticatedMessagesRoute: AuthenticatedMessagesRoute,
   AuthenticatedNewsRoute: AuthenticatedNewsRoute,
   AuthenticatedParentRoute: AuthenticatedParentRouteWithChildren,
@@ -991,7 +1094,10 @@ const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
+  AdminLoginRoute: AdminLoginRoute,
   AuthRoute: AuthRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
+  LoginRoleRoute: LoginRoleRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -52,10 +52,7 @@ function AdminSchools() {
   const { data: schools = [], isLoading } = useQuery({
     queryKey: ["admin-schools"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("schools")
-        .select("*")
-        .order("name");
+      const { data, error } = await supabase.from("schools").select("*").order("name");
       if (error) throw error;
       return data as SchoolRow[];
     },
@@ -85,7 +82,11 @@ function AdminSchools() {
       qc.invalidateQueries({ queryKey: ["admin-stats"] });
       setOpen(false);
       setEditing(null);
-      setName(""); setCode(""); setAddress(""); setPhone(""); setEmail("");
+      setName("");
+      setCode("");
+      setAddress("");
+      setPhone("");
+      setEmail("");
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -112,7 +113,11 @@ function AdminSchools() {
       setEmail(s.email ?? "");
     } else {
       setEditing(null);
-      setName(""); setCode(""); setAddress(""); setPhone(""); setEmail("");
+      setName("");
+      setCode("");
+      setAddress("");
+      setPhone("");
+      setEmail("");
     }
     setOpen(true);
   };
@@ -147,7 +152,11 @@ function AdminSchools() {
               </div>
               <div className="space-y-1.5">
                 <Label>Address (optional)</Label>
-                <Input value={address} onChange={(e) => setAddress(e.target.value)} maxLength={500} />
+                <Input
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  maxLength={500}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>Email (optional)</Label>
@@ -155,7 +164,9 @@ function AdminSchools() {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
+              <Button variant="ghost" onClick={() => setOpen(false)}>
+                Cancel
+              </Button>
               <Button onClick={() => save.mutate()} disabled={save.isPending}>
                 {save.isPending ? "Saving…" : "Save"}
               </Button>
@@ -187,7 +198,9 @@ function AdminSchools() {
               {schools.map((s) => (
                 <tr key={s.id}>
                   <td className="px-4 py-3 font-medium">{s.name}</td>
-                  <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{s.code ?? "—"}</td>
+                  <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
+                    {s.code ?? "—"}
+                  </td>
                   <td className="px-4 py-3 text-muted-foreground">{s.email ?? "—"}</td>
                   <td className="px-4 py-3 text-muted-foreground">{s.phone ?? "—"}</td>
                   <td className="px-4 py-3 flex items-center gap-1">

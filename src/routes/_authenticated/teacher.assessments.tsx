@@ -7,7 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import { PortalShell } from "../_authenticated";
 import { supabase } from "@/integrations/supabase/client";
@@ -33,7 +37,10 @@ function TeacherAssessments() {
     enabled: !!user,
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("classes").select("id, name").eq("teacher_id", user!.id).order("name");
+        .from("classes")
+        .select("id, name")
+        .eq("teacher_id", user!.id)
+        .order("name");
       if (error) throw error;
       return data ?? [];
     },
@@ -65,7 +72,10 @@ function TeacherAssessments() {
 
       const assessmentIds = (data ?? []).map((a) => a.id);
       const { data: scores } = assessmentIds.length
-        ? await supabase.from("assessment_scores").select("assessment_id").in("assessment_id", assessmentIds)
+        ? await supabase
+            .from("assessment_scores")
+            .select("assessment_id")
+            .in("assessment_id", assessmentIds)
         : { data: [] as { assessment_id: string }[] };
       const scoredMap = new Map<string, number>();
       for (const s of scores ?? []) {
@@ -97,7 +107,10 @@ function TeacherAssessments() {
     },
     onSuccess: () => {
       toast.success("Assessment created");
-      setTitle(""); setCoverage(""); setScheduledAt(""); setPoints("100");
+      setTitle("");
+      setCoverage("");
+      setScheduledAt("");
+      setPoints("100");
       qc.invalidateQueries({ queryKey: ["teacher-assessments"] });
       qc.invalidateQueries({ queryKey: ["assessments-upcoming"] });
     },
@@ -113,16 +126,27 @@ function TeacherAssessments() {
   });
 
   return (
-    <PortalShell title="Assessments" subtitle="Schedule assessments and share coverage with students and parents.">
+    <PortalShell
+      title="Assessments"
+      subtitle="Schedule assessments and share coverage with students and parents."
+    >
       <div className="grid gap-6 lg:grid-cols-[1fr_2fr]">
         <Card className="p-5 space-y-3 h-fit">
-          <h3 className="font-semibold flex items-center gap-2"><Plus className="h-4 w-4" /> New assessment</h3>
+          <h3 className="font-semibold flex items-center gap-2">
+            <Plus className="h-4 w-4" /> New assessment
+          </h3>
           <div className="space-y-1.5">
             <Label>Class</Label>
             <Select value={classId} onValueChange={setClassId}>
-              <SelectTrigger><SelectValue placeholder="Select class" /></SelectTrigger>
+              <SelectTrigger>
+                <SelectValue placeholder="Select class" />
+              </SelectTrigger>
               <SelectContent>
-                {classes.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                {classes.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.name}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -132,16 +156,31 @@ function TeacherAssessments() {
           </div>
           <div className="space-y-1.5">
             <Label>Coverage / syllabus</Label>
-            <Textarea value={coverage} onChange={(e) => setCoverage(e.target.value)} rows={4} maxLength={2000} placeholder="Chapters, topics, sample questions…" />
+            <Textarea
+              value={coverage}
+              onChange={(e) => setCoverage(e.target.value)}
+              rows={4}
+              maxLength={2000}
+              placeholder="Chapters, topics, sample questions…"
+            />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Date & time</Label>
-              <Input type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} />
+              <Input
+                type="datetime-local"
+                value={scheduledAt}
+                onChange={(e) => setScheduledAt(e.target.value)}
+              />
             </div>
             <div className="space-y-1.5">
               <Label>Points</Label>
-              <Input type="number" min={0} value={points} onChange={(e) => setPoints(e.target.value)} />
+              <Input
+                type="number"
+                min={0}
+                value={points}
+                onChange={(e) => setPoints(e.target.value)}
+              />
             </div>
           </div>
           <Button onClick={() => create.mutate()} disabled={create.isPending}>
@@ -151,40 +190,53 @@ function TeacherAssessments() {
 
         <div className="space-y-3">
           {items.length === 0 ? (
-            <Card className="p-8 text-center text-sm text-muted-foreground">No assessments yet.</Card>
-          ) : items.map((a) => (
-            <Card key={a.id} className="p-4">
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0 flex-1">
-                  <div className="font-semibold">{a.title}</div>
-                  <div className="text-xs text-muted-foreground mt-1">
-                    {a.class_name} · {new Date(a.scheduled_at).toLocaleString()} · {a.points} pts
-                  </div>
-                  <div className="flex flex-wrap gap-1.5 mt-2">
-                    <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
-                      {a.scored}/{a.roster} scored
-                    </span>
-                    {a.missed > 0 && (
-                      <span className="inline-flex items-center rounded-full bg-destructive/10 px-2 py-0.5 text-[11px] font-medium text-destructive">
-                        {a.missed} missed
+            <Card className="p-8 text-center text-sm text-muted-foreground">
+              No assessments yet.
+            </Card>
+          ) : (
+            items.map((a) => (
+              <Card key={a.id} className="p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <div className="font-semibold">{a.title}</div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {a.class_name} · {new Date(a.scheduled_at).toLocaleString()} · {a.points} pts
+                    </div>
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
+                        {a.scored}/{a.roster} scored
                       </span>
+                      {a.missed > 0 && (
+                        <span className="inline-flex items-center rounded-full bg-destructive/10 px-2 py-0.5 text-[11px] font-medium text-destructive">
+                          {a.missed} missed
+                        </span>
+                      )}
+                    </div>
+                    {a.coverage && (
+                      <p className="text-sm mt-2 whitespace-pre-wrap">
+                        <span className="font-medium">Coverage: </span>
+                        {a.coverage}
+                      </p>
                     )}
                   </div>
-                  {a.coverage && <p className="text-sm mt-2 whitespace-pre-wrap"><span className="font-medium">Coverage: </span>{a.coverage}</p>}
+                  <div className="flex items-center gap-1">
+                    <Button asChild size="sm" variant="secondary">
+                      <Link to="/teacher/assessments/$assessmentId" params={{ assessmentId: a.id }}>
+                        Enter scores
+                      </Link>
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => confirm("Delete?") && remove.mutate(a.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  <Button asChild size="sm" variant="secondary">
-                    <Link to="/teacher/assessments/$assessmentId" params={{ assessmentId: a.id }}>
-                      Enter scores
-                    </Link>
-                  </Button>
-                  <Button size="icon" variant="ghost" onClick={() => confirm("Delete?") && remove.mutate(a.id)}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </Card>
-          ))}
+              </Card>
+            ))
+          )}
         </div>
       </div>
     </PortalShell>

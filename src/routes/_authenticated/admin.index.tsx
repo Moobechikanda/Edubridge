@@ -4,7 +4,22 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PortalShell } from "../_authenticated";
 import { supabase } from "@/integrations/supabase/client";
-import { Users, BookOpen, MessagesSquare, GraduationCap, ScrollText, Newspaper, Wallet, Plus, CalendarClock, Megaphone, FileText, School, Layers } from "lucide-react";
+import {
+  Users,
+  BookOpen,
+  MessagesSquare,
+  GraduationCap,
+  ScrollText,
+  Newspaper,
+  Wallet,
+  Plus,
+  CalendarClock,
+  Megaphone,
+  FileText,
+  School,
+  Layers,
+  type LucideIcon,
+} from "lucide-react";
 import { RoleGuard } from "@/components/RoleGuard";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
@@ -19,7 +34,18 @@ function AdminDashboard() {
   const { data: stats, isLoading } = useQuery({
     queryKey: ["admin-stats"],
     queryFn: async () => {
-      const [users, classes, schools, academicYears, announcements, enrollments, roles, assignments, events, fees] = await Promise.all([
+      const [
+        users,
+        classes,
+        schools,
+        academicYears,
+        announcements,
+        enrollments,
+        roles,
+        assignments,
+        events,
+        fees,
+      ] = await Promise.all([
         supabase.from("profiles").select("id", { count: "exact", head: true }),
         supabase.from("classes").select("id", { count: "exact", head: true }),
         supabase.from("schools").select("id", { count: "exact", head: true }),
@@ -35,7 +61,7 @@ function AdminDashboard() {
         acc[r.role] = (acc[r.role] ?? 0) + 1;
         return acc;
       }, {});
-      const outstandingFees = (fees.data ?? []).filter((f: any) => f.status === "outstanding").length;
+      const outstandingFees = (fees.data ?? []).filter((f) => f.status === "outstanding").length;
       return {
         users: users.count ?? 0,
         classes: classes.count ?? 0,
@@ -125,14 +151,47 @@ function AdminDashboard() {
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Stat icon={School} label="Schools" value={isLoading ? "—" : String(stats?.schools ?? 0)} />
-        <Stat icon={Layers} label="Academic years" value={isLoading ? "—" : String(stats?.academicYears ?? 0)} />
-        <Stat icon={Users} label="Total users" value={isLoading ? "—" : String(stats?.users ?? 0)} />
-        <Stat icon={BookOpen} label="Active classes" value={isLoading ? "—" : String(stats?.classes ?? 0)} />
-        <Stat icon={GraduationCap} label="Enrollments" value={isLoading ? "—" : String(stats?.enrollments ?? 0)} />
-        <Stat icon={FileText} label="Assignments" value={isLoading ? "—" : String(stats?.assignments ?? 0)} />
-        <Stat icon={Megaphone} label="Announcements" value={isLoading ? "—" : String(stats?.announcements ?? 0)} />
-        <Stat icon={CalendarClock} label="Events" value={isLoading ? "—" : String(stats?.events ?? 0)} />
-        <Stat icon={Wallet} label="Outstanding fees" value={isLoading ? "—" : String(stats?.outstandingFees ?? 0)} color="text-destructive" />
+        <Stat
+          icon={Layers}
+          label="Academic years"
+          value={isLoading ? "—" : String(stats?.academicYears ?? 0)}
+        />
+        <Stat
+          icon={Users}
+          label="Total users"
+          value={isLoading ? "—" : String(stats?.users ?? 0)}
+        />
+        <Stat
+          icon={BookOpen}
+          label="Active classes"
+          value={isLoading ? "—" : String(stats?.classes ?? 0)}
+        />
+        <Stat
+          icon={GraduationCap}
+          label="Enrollments"
+          value={isLoading ? "—" : String(stats?.enrollments ?? 0)}
+        />
+        <Stat
+          icon={FileText}
+          label="Assignments"
+          value={isLoading ? "—" : String(stats?.assignments ?? 0)}
+        />
+        <Stat
+          icon={Megaphone}
+          label="Announcements"
+          value={isLoading ? "—" : String(stats?.announcements ?? 0)}
+        />
+        <Stat
+          icon={CalendarClock}
+          label="Events"
+          value={isLoading ? "—" : String(stats?.events ?? 0)}
+        />
+        <Stat
+          icon={Wallet}
+          label="Outstanding fees"
+          value={isLoading ? "—" : String(stats?.outstandingFees ?? 0)}
+          color="text-destructive"
+        />
       </div>
 
       <div className="grid gap-6 mt-8 lg:grid-cols-3">
@@ -212,7 +271,17 @@ function AdminDashboard() {
   );
 }
 
-function Stat({ icon: Icon, label, value, color }: { icon: any; label: string; value: string; color?: string }) {
+function Stat({
+  icon: Icon,
+  label,
+  value,
+  color,
+}: {
+  icon: LucideIcon;
+  label: string;
+  value: string;
+  color?: string;
+}) {
   return (
     <Card className="p-5">
       <div className="flex items-center justify-between">

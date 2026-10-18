@@ -114,7 +114,7 @@ function ClassDetail() {
       toast.success("Student removed");
       qc.invalidateQueries({ queryKey: ["class-students", classId] });
     },
-    onError: (e: any) => toast.error(e.message ?? "Remove failed"),
+    onError: (e: Error) => toast.error(e.message || "Remove failed"),
   });
 
   const removeAssignment = useMutation({
@@ -126,10 +126,11 @@ function ClassDetail() {
       toast.success("Assignment deleted");
       qc.invalidateQueries({ queryKey: ["class-assignments", classId] });
     },
-    onError: (e: any) => toast.error(e.message ?? "Delete failed"),
+    onError: (e: Error) => toast.error(e.message || "Delete failed"),
   });
 
-  if (!cls) return <div className="container mx-auto px-4 py-10 text-muted-foreground">Loading…</div>;
+  if (!cls)
+    return <div className="container mx-auto px-4 py-10 text-muted-foreground">Loading…</div>;
 
   return (
     <div className="container mx-auto px-4 py-10">
@@ -174,18 +175,24 @@ function ClassDetail() {
           <Card className="p-4">
             <div className="mb-3 space-y-2">
               <p className="text-sm text-muted-foreground">
-                Students join by entering join code <span className="font-mono font-semibold">{cls.join_code}</span> in their portal.
+                Students join by entering join code{" "}
+                <span className="font-mono font-semibold">{cls.join_code}</span> in their portal.
               </p>
               <div className="flex items-center gap-2 flex-wrap">
                 <code className="text-xs font-mono px-2 py-1 rounded bg-muted break-all">
-                  {typeof window !== "undefined" ? window.location.origin : ""}/student/classes?join={cls.join_code}
+                  {typeof window !== "undefined" ? window.location.origin : ""}
+                  /student/classes?join={cls.join_code}
                 </code>
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={() => {
-                    navigator.clipboard.writeText(`${window.location.origin}/student/classes?join=${cls.join_code}`);
-                    toast.success("Invite link copied — share it anywhere (Classroom, WhatsApp, email)");
+                    navigator.clipboard.writeText(
+                      `${window.location.origin}/student/classes?join=${cls.join_code}`,
+                    );
+                    toast.success(
+                      "Invite link copied — share it anywhere (Classroom, WhatsApp, email)",
+                    );
                   }}
                 >
                   <Copy className="h-4 w-4 mr-1" /> Copy invite link
@@ -193,7 +200,9 @@ function ClassDetail() {
               </div>
             </div>
             {students.length === 0 ? (
-              <div className="text-center py-10 text-muted-foreground text-sm">No students enrolled yet.</div>
+              <div className="text-center py-10 text-muted-foreground text-sm">
+                No students enrolled yet.
+              </div>
             ) : (
               <Table>
                 <TableHeader>
@@ -235,7 +244,9 @@ function ClassDetail() {
             <NewAssignmentDialog classId={classId} />
           </div>
           {assignments.length === 0 ? (
-            <Card className="p-10 text-center text-muted-foreground text-sm">No assignments yet.</Card>
+            <Card className="p-10 text-center text-muted-foreground text-sm">
+              No assignments yet.
+            </Card>
           ) : (
             <div className="grid gap-3">
               {assignments.map((a) => {
@@ -258,7 +269,9 @@ function ClassDetail() {
                         {a.due_date && ` · Due ${new Date(a.due_date).toLocaleString()}`}
                       </div>
                       {a.description && (
-                        <p className="text-sm text-muted-foreground mt-2 line-clamp-2">{a.description}</p>
+                        <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
+                          {a.description}
+                        </p>
                       )}
                       <div className="flex flex-wrap gap-1.5 mt-2">
                         <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
@@ -281,7 +294,10 @@ function ClassDetail() {
                     </div>
                     <div className="flex gap-1">
                       <Button asChild size="sm" variant="secondary">
-                        <Link to="/teacher/assignments/$assignmentId" params={{ assignmentId: a.id }}>
+                        <Link
+                          to="/teacher/assignments/$assignmentId"
+                          params={{ assignmentId: a.id }}
+                        >
                           Grade
                         </Link>
                       </Button>
@@ -306,7 +322,11 @@ function ClassDetail() {
           <AnnouncementsPanel classId={classId} />
         </TabsContent>
         <TabsContent value="subjects" className="mt-4">
-          <SubjectsPanel classId={classId} teacherId={(cls as any).teacher_id} gradeLevel={cls?.grade_level ?? null} />
+          <SubjectsPanel
+            classId={classId}
+            teacherId={cls.teacher_id}
+            gradeLevel={cls?.grade_level ?? null}
+          />
         </TabsContent>
       </Tabs>
     </div>
@@ -346,7 +366,10 @@ function AnnouncementsPanel({ classId }: { classId: string }) {
           return [a.id, row] as const;
         }),
       );
-      return Object.fromEntries(entries) as Record<string, { seen_count: number; total_recipients: number } | null>;
+      return Object.fromEntries(entries) as Record<
+        string,
+        { seen_count: number; total_recipients: number } | null
+      >;
     },
   });
 
@@ -367,7 +390,7 @@ function AnnouncementsPanel({ classId }: { classId: string }) {
       setBody("");
       qc.invalidateQueries({ queryKey: ["class-announcements", classId] });
     },
-    onError: (e: any) => toast.error(e.message ?? "Post failed"),
+    onError: (e: Error) => toast.error(e.message || "Post failed"),
   });
 
   const remove = useMutation({
@@ -390,11 +413,22 @@ function AnnouncementsPanel({ classId }: { classId: string }) {
         <div className="space-y-3">
           <div className="space-y-1.5">
             <Label htmlFor="ann-title">Title</Label>
-            <Input id="ann-title" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={150} />
+            <Input
+              id="ann-title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              maxLength={150}
+            />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="ann-body">Message</Label>
-            <Textarea id="ann-body" value={body} onChange={(e) => setBody(e.target.value)} rows={4} maxLength={2000} />
+            <Textarea
+              id="ann-body"
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+              rows={4}
+              maxLength={2000}
+            />
           </div>
           <div className="flex justify-end">
             <Button onClick={() => post.mutate()} disabled={post.isPending}>
@@ -405,37 +439,39 @@ function AnnouncementsPanel({ classId }: { classId: string }) {
       </Card>
 
       {items.length === 0 ? (
-        <Card className="p-10 text-center text-muted-foreground text-sm">No announcements yet.</Card>
+        <Card className="p-10 text-center text-muted-foreground text-sm">
+          No announcements yet.
+        </Card>
       ) : (
         <div className="space-y-3">
           {items.map((a) => {
             const stat = seenStats[a.id];
             return (
-            <Card key={a.id} className="p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex-1 min-w-0">
-                  <div className="font-semibold">{a.title}</div>
-                  <div className="text-xs text-muted-foreground mt-0.5">
-                    {new Date(a.created_at).toLocaleString()}
+              <Card key={a.id} className="p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="font-semibold">{a.title}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">
+                      {new Date(a.created_at).toLocaleString()}
+                    </div>
+                    <p className="text-sm mt-2 whitespace-pre-wrap">{a.body}</p>
+                    {stat && (
+                      <span className="inline-flex items-center rounded-full bg-accent px-2 py-0.5 text-[11px] font-medium text-accent-foreground mt-2">
+                        Seen by {stat.seen_count}/{stat.total_recipients}
+                      </span>
+                    )}
                   </div>
-                  <p className="text-sm mt-2 whitespace-pre-wrap">{a.body}</p>
-                  {stat && (
-                    <span className="inline-flex items-center rounded-full bg-accent px-2 py-0.5 text-[11px] font-medium text-accent-foreground mt-2">
-                      Seen by {stat.seen_count}/{stat.total_recipients}
-                    </span>
-                  )}
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => {
+                      if (confirm("Delete this announcement?")) remove.mutate(a.id);
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  onClick={() => {
-                    if (confirm("Delete this announcement?")) remove.mutate(a.id);
-                  }}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            </Card>
+              </Card>
             );
           })}
         </div>
@@ -476,7 +512,7 @@ function NewAssignmentDialog({ classId }: { classId: string }) {
       setDueDate("");
       setPoints("100");
     },
-    onError: (e: any) => toast.error(e.message ?? "Create failed"),
+    onError: (e: Error) => toast.error(e.message || "Create failed"),
   });
 
   return (
@@ -509,25 +545,49 @@ function NewAssignmentDialog({ classId }: { classId: string }) {
           </div>
           <div className="space-y-2">
             <Label htmlFor="title">Title</Label>
-            <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={150} />
+            <Input
+              id="title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              maxLength={150}
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="desc">Instructions</Label>
-            <Textarea id="desc" value={description} onChange={(e) => setDescription(e.target.value)} rows={4} maxLength={2000} />
+            <Textarea
+              id="desc"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={4}
+              maxLength={2000}
+            />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label htmlFor="due">Due date</Label>
-              <Input id="due" type="datetime-local" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+              <Input
+                id="due"
+                type="datetime-local"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="pts">Points</Label>
-              <Input id="pts" type="number" min={0} value={points} onChange={(e) => setPoints(e.target.value)} />
+              <Input
+                id="pts"
+                type="number"
+                min={0}
+                value={points}
+                onChange={(e) => setPoints(e.target.value)}
+              />
             </div>
           </div>
         </div>
         <DialogFooter>
-          <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
+          <Button variant="ghost" onClick={() => setOpen(false)}>
+            Cancel
+          </Button>
           <Button onClick={() => create.mutate()} disabled={create.isPending}>
             {create.isPending ? "Creating…" : "Create"}
           </Button>
@@ -537,7 +597,15 @@ function NewAssignmentDialog({ classId }: { classId: string }) {
   );
 }
 
-function SubjectsPanel({ classId, teacherId, gradeLevel }: { classId: string; teacherId: string; gradeLevel: number | null }) {
+function SubjectsPanel({
+  classId,
+  teacherId,
+  gradeLevel,
+}: {
+  classId: string;
+  teacherId: string;
+  gradeLevel: number | null;
+}) {
   const qc = useQueryClient();
   const [selectedSubject, setSelectedSubject] = useState("");
   const [open, setOpen] = useState(false);
@@ -545,13 +613,22 @@ function SubjectsPanel({ classId, teacherId, gradeLevel }: { classId: string; te
   const { data: classSubjects = [] } = useQuery({
     queryKey: ["class-subjects", classId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: rows, error } = await supabase
         .from("class_subjects")
-        .select("*, subjects(id, name, code)")
+        .select("*")
         .eq("class_id", classId)
         .order("created_at");
       if (error) throw error;
-      return data ?? [];
+      const subjectIds = (rows ?? []).map((row) => row.subject_id);
+      const { data: subjects, error: subjectError } = subjectIds.length
+        ? await supabase.from("subjects").select("id, name, code").in("id", subjectIds)
+        : { data: [], error: null };
+      if (subjectError) throw subjectError;
+      const subjectsById = new Map((subjects ?? []).map((subject) => [subject.id, subject]));
+      return (rows ?? []).map((row) => ({
+        ...row,
+        subjects: subjectsById.get(row.subject_id) ?? null,
+      }));
     },
   });
 
@@ -583,7 +660,7 @@ function SubjectsPanel({ classId, teacherId, gradeLevel }: { classId: string; te
       setSelectedSubject("");
       qc.invalidateQueries({ queryKey: ["class-subjects", classId] });
     },
-    onError: (e: any) => toast.error(e.message ?? "Add failed"),
+    onError: (e: Error) => toast.error(e.message || "Add failed"),
   });
 
   const removeSubject = useMutation({
@@ -598,9 +675,14 @@ function SubjectsPanel({ classId, teacherId, gradeLevel }: { classId: string; te
   });
 
   const availableSubjects = allSubjects.filter((subject) => {
-    const isAlreadyAssigned = classSubjects.some((classSubject: any) => classSubject.subject_id === subject.id);
-    const isForThisGrade = !gradeLevel || !subject.min_grade || !subject.max_grade
-      || (subject.min_grade <= gradeLevel && subject.max_grade >= gradeLevel);
+    const isAlreadyAssigned = classSubjects.some(
+      (classSubject) => classSubject.subject_id === subject.id,
+    );
+    const isForThisGrade =
+      !gradeLevel ||
+      !subject.min_grade ||
+      !subject.max_grade ||
+      (subject.min_grade <= gradeLevel && subject.max_grade >= gradeLevel);
     return !isAlreadyAssigned && isForThisGrade;
   });
 
@@ -619,7 +701,9 @@ function SubjectsPanel({ classId, teacherId, gradeLevel }: { classId: string; te
               <DialogTitle>Add subject</DialogTitle>
             </DialogHeader>
             {gradeLevel && (
-              <p className="text-sm text-muted-foreground">Showing subjects available for Grade {gradeLevel}.</p>
+              <p className="text-sm text-muted-foreground">
+                Showing subjects available for Grade {gradeLevel}.
+              </p>
             )}
             <div className="space-y-4">
               <div className="space-y-2">
@@ -639,8 +723,13 @@ function SubjectsPanel({ classId, teacherId, gradeLevel }: { classId: string; te
               </div>
             </div>
             <DialogFooter>
-              <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
-              <Button onClick={() => addSubject.mutate()} disabled={addSubject.isPending || !selectedSubject}>
+              <Button variant="ghost" onClick={() => setOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                onClick={() => addSubject.mutate()}
+                disabled={addSubject.isPending || !selectedSubject}
+              >
                 {addSubject.isPending ? "Adding…" : "Add"}
               </Button>
             </DialogFooter>
@@ -649,10 +738,12 @@ function SubjectsPanel({ classId, teacherId, gradeLevel }: { classId: string; te
       </div>
 
       {classSubjects.length === 0 ? (
-        <Card className="p-8 text-center text-sm text-muted-foreground">No subjects assigned yet.</Card>
+        <Card className="p-8 text-center text-sm text-muted-foreground">
+          No subjects assigned yet.
+        </Card>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {classSubjects.map((cs: any) => (
+          {classSubjects.map((cs) => (
             <Card key={cs.id} className="p-4 flex items-start justify-between gap-3">
               <div>
                 <div className="font-medium">{cs.subjects?.name ?? "Unknown"}</div>

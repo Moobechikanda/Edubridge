@@ -73,10 +73,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "EduBridge — Connect Teachers, Students, Parents" },
-      { name: "description", content: "EduBridge unites teachers, students, parents and administrators in one platform for communication, learning, and progress tracking." },
+      {
+        name: "description",
+        content:
+          "EduBridge unites teachers, students, parents and administrators in one platform for communication, learning, and progress tracking.",
+      },
       { name: "author", content: "EduBridge" },
       { property: "og:title", content: "EduBridge — School Communication & Learning Platform" },
-      { property: "og:description", content: "One platform connecting every part of the school community." },
+      {
+        property: "og:description",
+        content: "One platform connecting every part of the school community.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },

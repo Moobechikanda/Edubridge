@@ -91,14 +91,19 @@ function NewsPage() {
   });
 
   return (
-    <PortalShell title="School news & events" subtitle="Announcements, upcoming assessments, meetings, and events.">
+    <PortalShell
+      title="School news & events"
+      subtitle="Announcements, upcoming assessments, meetings, and events."
+    >
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-4">
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <Megaphone className="h-5 w-5" /> Announcements
           </h2>
           {announcements.length === 0 ? (
-            <Card className="p-8 text-center text-sm text-muted-foreground">No school news yet.</Card>
+            <Card className="p-8 text-center text-sm text-muted-foreground">
+              No school news yet.
+            </Card>
           ) : (
             announcements.map((a) => (
               <Card key={a.id} className={`p-5 ${a.pinned ? "border-primary/40" : ""}`}>
@@ -137,7 +142,9 @@ function NewsPage() {
                       {e.end_at && ` · Ends ${new Date(e.end_at).toLocaleString()}`}
                       {e.location && ` · ${e.location}`}
                     </div>
-                    {e.description && <p className="text-sm mt-2 whitespace-pre-wrap">{e.description}</p>}
+                    {e.description && (
+                      <p className="text-sm mt-2 whitespace-pre-wrap">{e.description}</p>
+                    )}
                     <Badge className={categoryColor[e.event_type] ?? ""} variant="secondary">
                       {e.event_type}
                     </Badge>
@@ -162,7 +169,9 @@ function NewsPage() {
                       {new Date(m.scheduled_at).toLocaleString()}
                       {m.location && ` · ${m.location}`}
                     </div>
-                    {m.description && <p className="text-sm mt-2 whitespace-pre-wrap">{m.description}</p>}
+                    {m.description && (
+                      <p className="text-sm mt-2 whitespace-pre-wrap">{m.description}</p>
+                    )}
                     <MeetingRsvp meetingId={m.id} />
                   </Card>
                 ))}
@@ -182,7 +191,8 @@ function NewsPage() {
                   <Card key={a.id} className="p-4">
                     <div className="font-medium">{a.title}</div>
                     <div className="text-xs text-muted-foreground mt-1">
-                      {a.class_name} · {new Date(a.scheduled_at).toLocaleDateString()} · {a.points} pts
+                      {a.class_name} · {new Date(a.scheduled_at).toLocaleDateString()} · {a.points}{" "}
+                      pts
                     </div>
                     {a.coverage && (
                       <p className="text-sm mt-2 whitespace-pre-wrap">

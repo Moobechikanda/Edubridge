@@ -9,7 +9,7 @@ import { PortalShell } from "../_authenticated";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
-import { Trash2, UserPlus, MailCheck, X } from "lucide-react";
+import { ChevronRight, Trash2, UserPlus, MailCheck, X } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/parent/children")({
   validateSearch: (s: Record<string, unknown>): { code?: string } =>
@@ -38,12 +38,36 @@ function ParentChildren() {
       if (error) throw error;
       const ids = (links ?? []).map((l) => l.student_id);
       if (ids.length === 0) return [];
-      const { data: profs } = await supabase.from("profiles").select("id, full_name").in("id", ids);
+      const [{ data: profs, error: profilesError }, { data: enrollments, error: classesError }] =
+        await Promise.all([
+          supabase.from("profiles").select("id, full_name").in("id", ids),
+          supabase
+            .from("enrollments")
+            .select("student_id, classes(name, grade_level)")
+            .in("student_id", ids),
+        ]);
+      if (profilesError) throw profilesError;
+      if (classesError) throw classesError;
+
       const map = new Map((profs ?? []).map((p) => [p.id, p.full_name]));
+      const classMap = new Map<string, string[]>();
+      for (const enrollment of enrollments ?? []) {
+        const classRecord = enrollment.classes;
+        if (!classRecord) continue;
+        const details = classRecord.grade_level
+          ? `${classRecord.name} · Grade ${classRecord.grade_level}`
+          : classRecord.name;
+        classMap.set(enrollment.student_id, [
+          ...(classMap.get(enrollment.student_id) ?? []),
+          details,
+        ]);
+      }
+
       return (links ?? []).map((l) => ({
         link_id: l.id,
         student_id: l.student_id,
         full_name: map.get(l.student_id) ?? "Student",
+        classes: classMap.get(l.student_id) ?? [],
       }));
     },
   });
@@ -52,7 +76,9 @@ function ParentChildren() {
     queryKey: ["invite-preview", normalizedInvite],
     enabled: !!normalizedInvite,
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("preview_student_by_code", { _code: normalizedInvite! });
+      const { data, error } = await supabase.rpc("preview_student_by_code", {
+        _code: normalizedInvite!,
+      });
       if (error) throw error;
       const row = Array.isArray(data) ? data[0] : null;
       return row ?? null;
@@ -84,7 +110,10 @@ function ParentChildren() {
   const inviteUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/parent/children?code=`;
 
   return (
-    <PortalShell title="My children" subtitle="Link your children's accounts to follow their progress.">
+    <PortalShell
+      title="My children"
+      subtitle="Link your children's accounts to follow their progress."
+    >
       {normalizedInvite && (
         <Card className="p-6 mb-6 border-primary/40 bg-primary/5">
           <div className="flex items-start gap-3">
@@ -102,14 +131,16 @@ function ParentChildren() {
                 </p>
               ) : alreadyLinked ? (
                 <p className="text-sm text-muted-foreground mt-3">
-                  <span className="font-medium text-foreground">{invitePreview.full_name || "This student"}</span>{" "}
+                  <span className="font-medium text-foreground">
+                    {invitePreview.full_name || "This student"}
+                  </span>{" "}
                   is already linked to your account.
                 </p>
               ) : (
                 <p className="text-sm mt-3">
                   Confirm you'd like to link{" "}
-                  <span className="font-medium">{invitePreview.full_name || "this student"}</span> to your parent
-                  account.
+                  <span className="font-medium">{invitePreview.full_name || "this student"}</span>{" "}
+                  to your parent account.
                 </p>
               )}
               <div className="flex gap-2 mt-4">
@@ -135,8 +166,8 @@ function ParentChildren() {
           <UserPlus className="h-4 w-4" /> Link a child by code
         </h2>
         <p className="text-sm text-muted-foreground mb-4">
-          Ask your child to share their 6-character parent code (found on their student profile), or open the
-          invite link they sent you.
+          Enter the student code sent to your email by the school, or use the parent code shown on
+          the student's profile.
         </p>
         <form
           className="flex flex-col sm:flex-row gap-3 sm:items-end"
@@ -174,30 +205,43 @@ function ParentChildren() {
         ) : (
           <ul className="divide-y">
             {children.map((c) => (
-              <li key={c.link_id} className="py-3 flex items-center justify-between">
-                <div>
-                  <div className="font-medium">{c.full_name}</div>
-                  <Link
-                    to="/parent/children/$studentId"
-                    params={{ studentId: c.student_id }}
-                    className="text-sm text-primary hover:underline"
-                  >
-                    View progress →
-                  </Link>
-                </div>
+              <li key={c.link_id} className="flex items-center justify-between gap-3 py-2">
+                <Link
+                  to="/parent/children/$studentId"
+                  params={{ studentId: c.student_id }}
+                  className="flex min-h-12 min-w-0 flex-1 items-center justify-between gap-3 rounded-md px-2 py-2 hover:bg-accent/40 focus-visible:outline-2 focus-visible:outline-primary"
+                >
+                  <span className="min-w-0">
+                    <span className="block truncate font-medium">{c.full_name}</span>
+                    {c.classes.length > 0 && (
+                      <span className="mt-0.5 block truncate text-sm text-muted-foreground">
+                        {c.classes.join(", ")}
+                      </span>
+                    )}
+                  </span>
+                  <ChevronRight
+                    className="h-4 w-4 shrink-0 text-muted-foreground"
+                    aria-hidden="true"
+                  />
+                </Link>
                 <Button
                   variant="ghost"
                   size="sm"
+                  aria-label={`Unlink ${c.full_name}`}
                   onClick={() => {
                     if (confirm(`Unlink ${c.full_name}?`)) {
-                      supabase.from("parent_links").delete().eq("id", c.link_id).then(({ error }) => {
-                        if (error) toast.error(error.message);
-                        else {
-                          toast.success("Child unlinked");
-                          qc.invalidateQueries({ queryKey: ["parent-children"] });
-                          qc.invalidateQueries({ queryKey: ["parent-overview"] });
-                        }
-                      });
+                      supabase
+                        .from("parent_links")
+                        .delete()
+                        .eq("id", c.link_id)
+                        .then(({ error }) => {
+                          if (error) toast.error(error.message);
+                          else {
+                            toast.success("Child unlinked");
+                            qc.invalidateQueries({ queryKey: ["parent-children"] });
+                            qc.invalidateQueries({ queryKey: ["parent-overview"] });
+                          }
+                        });
                     }
                   }}
                 >

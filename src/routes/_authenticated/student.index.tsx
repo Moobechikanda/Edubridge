@@ -2,7 +2,19 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BookOpen, ClipboardList, TrendingUp, Clock, Copy, ChevronRight } from "lucide-react";
+import {
+  BookOpen,
+  ClipboardList,
+  TrendingUp,
+  Clock,
+  Copy,
+  ChevronRight,
+  CalendarDays,
+  MessagesSquare,
+  Newspaper,
+  Settings,
+  type LucideIcon,
+} from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
@@ -12,15 +24,30 @@ export const Route = createFileRoute("/_authenticated/student/")({
   component: StudentOverview,
 });
 
+type StudentAssignment = {
+  id: string;
+  title: string;
+  due_date: string | null;
+  points: number;
+  class_id: string;
+  assignment_type: string | null;
+  submission?: {
+    grade: number | null;
+    graded_at: string | null;
+    submitted_at: string | null;
+  } | null;
+  status?: "submitted" | "overdue" | "not_submitted";
+};
+
 type SubjectGroup = {
   class_id: string;
   class_name: string;
   subject: string | null;
   teacher_id: string;
   teacher_name: string;
-  pending: any[];
-  upcoming: any[];
-  completed: any[];
+  pending: StudentAssignment[];
+  upcoming: StudentAssignment[];
+  completed: StudentAssignment[];
 };
 
 function StudentOverview() {
@@ -30,7 +57,11 @@ function StudentOverview() {
     queryKey: ["student-profile", user?.id],
     enabled: !!user,
     queryFn: async () => {
-      const { data } = await supabase.from("profiles").select("parent_code").eq("id", user!.id).maybeSingle();
+      const { data } = await supabase
+        .from("profiles")
+        .select("parent_code")
+        .eq("id", user!.id)
+        .maybeSingle();
       return data;
     },
   });
@@ -44,12 +75,12 @@ function StudentOverview() {
         .select("class_id, classes(id, name, subject, teacher_id)")
         .eq("student_id", user!.id);
       const groups: SubjectGroup[] = [];
-      for (const e of (enr ?? [])) {
-        const cls = (e as any).classes;
+      for (const e of enr ?? []) {
+        const cls = e.classes;
         const teacherIds = cls?.teacher_id ? [cls.teacher_id] : [];
         const { data: teachers } = teacherIds.length
           ? await supabase.from("profiles").select("id, full_name").in("id", teacherIds)
-          : { data: [] as any[] };
+          : { data: [] };
         const teacherName = (teachers ?? [])[0]?.full_name ?? "Not assigned";
         groups.push({
           class_id: cls.id,
@@ -81,7 +112,7 @@ function StudentOverview() {
       const subMap = new Map((subs ?? []).map((s) => [s.assignment_id, s]));
       const now = Date.now();
 
-      for (const a of (assignments ?? [])) {
+      for (const a of assignments ?? []) {
         const group = groups.find((g) => g.class_id === a.class_id);
         if (!group) continue;
         const sub = subMap.get(a.id);
@@ -123,16 +154,33 @@ function StudentOverview() {
           <h1 className="text-3xl font-bold tracking-tight">
             Welcome back{user?.user_metadata?.full_name ? `, ${user.user_metadata.full_name}` : ""}
           </h1>
-          <p className="text-muted-foreground mt-1">Your subjects, teachers, and assignments at a glance.</p>
+          <p className="text-muted-foreground mt-1">
+            Your subjects, teachers, and assignments at a glance.
+          </p>
         </div>
         <Button asChild variant="outline" size="sm">
           <Link to="/student/classes">Join a class</Link>
         </Button>
       </div>
 
+      <section aria-label="Student services" className="mb-6">
+        <div className="grid grid-cols-3 gap-2 sm:gap-3">
+          <StudentShortcut to="/student/classes" label="My Classes" icon={BookOpen} />
+          <StudentShortcut to="/student/assignments" label="Assignments" icon={ClipboardList} />
+          <StudentShortcut to="/calendar" label="Calendar" icon={CalendarDays} />
+          <StudentShortcut to="/news" label="News" icon={Newspaper} />
+          <StudentShortcut to="/messages" label="Messages" icon={MessagesSquare} />
+          <StudentShortcut to="/settings/notifications" label="Settings" icon={Settings} />
+        </div>
+      </section>
+
       <div className="grid gap-4 md:grid-cols-3 mb-8">
         <Stat icon={BookOpen} label="Subjects" value={subjectGroups.length ?? "—"} />
-        <Stat icon={ClipboardList} label="Pending work" value={subjectGroups.reduce((a, g) => a + g.pending.length, 0) ?? "—"} />
+        <Stat
+          icon={ClipboardList}
+          label="Pending work"
+          value={subjectGroups.reduce((a, g) => a + g.pending.length, 0) ?? "—"}
+        />
         <Stat
           icon={TrendingUp}
           label="Average grade"
@@ -192,15 +240,19 @@ function StudentOverview() {
               </div>
 
               <div className="p-5">
-                {group.pending.length === 0 && group.upcoming.length === 0 && group.completed.length === 0 ? (
+                {group.pending.length === 0 &&
+                group.upcoming.length === 0 &&
+                group.completed.length === 0 ? (
                   <p className="text-sm text-muted-foreground">No assignments yet.</p>
                 ) : (
                   <div className="space-y-4">
                     {group.pending.length > 0 && (
                       <div>
-                        <h3 className="text-xs font-semibold uppercase text-muted-foreground mb-2">Pending</h3>
+                        <h3 className="text-xs font-semibold uppercase text-muted-foreground mb-2">
+                          Pending
+                        </h3>
                         <div className="space-y-2">
-                          {group.pending.slice(0, 5).map((a: any) => (
+                          {group.pending.slice(0, 5).map((a) => (
                             <AssignmentRow key={a.id} a={a} />
                           ))}
                         </div>
@@ -208,9 +260,11 @@ function StudentOverview() {
                     )}
                     {group.upcoming.length > 0 && (
                       <div>
-                        <h3 className="text-xs font-semibold uppercase text-muted-foreground mb-2">Upcoming</h3>
+                        <h3 className="text-xs font-semibold uppercase text-muted-foreground mb-2">
+                          Upcoming
+                        </h3>
                         <div className="space-y-2">
-                          {group.upcoming.slice(0, 5).map((a: any) => (
+                          {group.upcoming.slice(0, 5).map((a) => (
                             <AssignmentRow key={a.id} a={a} />
                           ))}
                         </div>
@@ -218,9 +272,11 @@ function StudentOverview() {
                     )}
                     {group.completed.length > 0 && (
                       <div>
-                        <h3 className="text-xs font-semibold uppercase text-muted-foreground mb-2">Completed</h3>
+                        <h3 className="text-xs font-semibold uppercase text-muted-foreground mb-2">
+                          Completed
+                        </h3>
                         <div className="space-y-2">
-                          {group.completed.slice(0, 5).map((a: any) => (
+                          {group.completed.slice(0, 5).map((a) => (
                             <AssignmentRow key={a.id} a={a} />
                           ))}
                         </div>
@@ -237,7 +293,7 @@ function StudentOverview() {
   );
 }
 
-function AssignmentRow({ a }: { a: any }) {
+function AssignmentRow({ a }: { a: StudentAssignment }) {
   const sub = a.submission;
   const overdue = !sub && a.due_date && new Date(a.due_date).getTime() < Date.now();
   return (
@@ -269,7 +325,9 @@ function AssignmentRow({ a }: { a: any }) {
         ) : sub ? (
           <span className="text-xs text-muted-foreground">Submitted</span>
         ) : (
-          <span className={`text-xs font-medium ${overdue ? "text-destructive" : "text-muted-foreground"}`}>
+          <span
+            className={`text-xs font-medium ${overdue ? "text-destructive" : "text-muted-foreground"}`}
+          >
             {overdue ? "Overdue" : "Not submitted"}
           </span>
         )}
@@ -283,7 +341,41 @@ function AssignmentRow({ a }: { a: any }) {
   );
 }
 
-function Stat({ icon: Icon, label, value }: { icon: any; label: string; value: string | number }) {
+function StudentShortcut({
+  to,
+  label,
+  icon: Icon,
+}: {
+  to:
+    | "/student/classes"
+    | "/student/assignments"
+    | "/calendar"
+    | "/news"
+    | "/messages"
+    | "/settings/notifications";
+  label: string;
+  icon: LucideIcon;
+}) {
+  return (
+    <Link
+      to={to}
+      className="flex min-h-20 flex-col items-center justify-center gap-2 rounded-lg border bg-card px-2 py-3 text-center text-sm font-medium text-foreground transition-colors hover:bg-accent/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+    >
+      <Icon className="h-5 w-5 text-primary" aria-hidden="true" />
+      <span>{label}</span>
+    </Link>
+  );
+}
+
+function Stat({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: LucideIcon;
+  label: string;
+  value: string | number;
+}) {
   return (
     <Card className="p-5">
       <div className="flex items-center justify-between">

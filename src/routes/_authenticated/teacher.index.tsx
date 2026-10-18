@@ -5,7 +5,18 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { BookOpen, FileText, Users, MessagesSquare, Plus, Contact2, ClipboardList, Bell, CalendarClock } from "lucide-react";
+import {
+  BookOpen,
+  FileText,
+  Users,
+  MessagesSquare,
+  Plus,
+  Contact2,
+  ClipboardList,
+  Bell,
+  CalendarClock,
+  type LucideIcon,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
@@ -79,24 +90,30 @@ function TeacherOverview() {
       const classIds = (classes ?? []).map((c) => c.id);
       const [enr, asg, sub, pendingGrading] = await Promise.all([
         classIds.length
-          ? supabase.from("enrollments").select("id", { count: "exact", head: true }).in("class_id", classIds)
-          : Promise.resolve({ count: 0 } as any),
+          ? supabase
+              .from("enrollments")
+              .select("id", { count: "exact", head: true })
+              .in("class_id", classIds)
+          : Promise.resolve({ count: 0 }),
         classIds.length
-          ? supabase.from("assignments").select("id", { count: "exact", head: true }).in("class_id", classIds)
-          : Promise.resolve({ count: 0 } as any),
+          ? supabase
+              .from("assignments")
+              .select("id", { count: "exact", head: true })
+              .in("class_id", classIds)
+          : Promise.resolve({ count: 0 }),
         classIds.length
           ? supabase
               .from("submissions")
               .select("id, assignments!inner(class_id)", { count: "exact", head: true })
               .in("assignments.class_id", classIds)
-          : Promise.resolve({ count: 0 } as any),
+          : Promise.resolve({ count: 0 }),
         classIds.length
           ? supabase
               .from("submissions")
               .select("id, assignments!inner(class_id)", { count: "exact", head: true })
               .in("assignments.class_id", classIds)
               .is("graded_at", null)
-          : Promise.resolve({ count: 0 } as any),
+          : Promise.resolve({ count: 0 }),
       ]);
       return {
         classes: classes?.length ?? 0,
@@ -119,7 +136,11 @@ function TeacherOverview() {
       const classIds = (classes ?? []).map((c) => c.id);
       if (classIds.length === 0) return [];
 
-      const [{ data: pendingAssignments }, { data: upcomingAssessments }, { data: unreadMessages }] = await Promise.all([
+      const [
+        { data: pendingAssignments },
+        { data: upcomingAssessments },
+        { data: unreadMessages },
+      ] = await Promise.all([
         supabase
           .from("assignments")
           .select("id, title, due_date, class_id, classes(name)")
@@ -139,17 +160,43 @@ function TeacherOverview() {
           .order("created_at", { ascending: false }),
       ]);
 
-      const items: any[] = [];
-      for (const a of (pendingAssignments ?? [])) {
-        items.push({ type: "assignment", title: a.title, subtitle: a.classes?.name, link: `/teacher/classes/${a.class_id}`, date: a.due_date });
+      const items: {
+        type: "assignment" | "assessment" | "message";
+        title: string;
+        subtitle: string | null;
+        link: string;
+        date: string | null;
+      }[] = [];
+      for (const a of pendingAssignments ?? []) {
+        items.push({
+          type: "assignment",
+          title: a.title,
+          subtitle: a.classes?.name,
+          link: `/teacher/classes/${a.class_id}`,
+          date: a.due_date,
+        });
       }
-      for (const a of (upcomingAssessments ?? [])) {
-        items.push({ type: "assessment", title: a.title, subtitle: "Upcoming assessment", link: `/teacher/assessments/${a.id}`, date: a.scheduled_at });
+      for (const a of upcomingAssessments ?? []) {
+        items.push({
+          type: "assessment",
+          title: a.title,
+          subtitle: "Upcoming assessment",
+          link: `/teacher/assessments/${a.id}`,
+          date: a.scheduled_at,
+        });
       }
-      for (const m of (unreadMessages ?? [])) {
-        items.push({ type: "message", title: "New message", subtitle: m.body?.slice(0, 60), link: "/messages", date: m.created_at });
+      for (const m of unreadMessages ?? []) {
+        items.push({
+          type: "message",
+          title: "New message",
+          subtitle: m.body?.slice(0, 60),
+          link: "/messages",
+          date: m.created_at,
+        });
       }
-      return items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 10);
+      return items
+        .sort((a, b) => new Date(b.date ?? 0).getTime() - new Date(a.date ?? 0).getTime())
+        .slice(0, 10);
     },
   });
 
@@ -180,7 +227,12 @@ function TeacherOverview() {
         <Stat icon={Users} label="Students" value={stats?.students ?? "—"} />
         <Stat icon={FileText} label="Assignments" value={stats?.assignments ?? "—"} />
         <Stat icon={ClipboardList} label="Submissions" value={stats?.submissions ?? "—"} />
-        <Stat icon={MessagesSquare} label="Pending grading" value={stats?.pendingGrading ?? "—"} color="text-amber-600" />
+        <Stat
+          icon={MessagesSquare}
+          label="Pending grading"
+          value={stats?.pendingGrading ?? "—"}
+          color="text-amber-600"
+        />
       </div>
 
       <div className="grid gap-6 mt-8 lg:grid-cols-3">
@@ -194,7 +246,10 @@ function TeacherOverview() {
             <ul className="divide-y">
               {actionItems.map((item, i) => (
                 <li key={i}>
-                  <Link to={item.link} className="flex items-center justify-between gap-3 py-3 hover:bg-accent/30 -mx-2 px-2 rounded-md">
+                  <Link
+                    to={item.link}
+                    className="flex items-center justify-between gap-3 py-3 hover:bg-accent/30 -mx-2 px-2 rounded-md"
+                  >
                     <div className="min-w-0">
                       <div className="font-medium text-sm">{item.title}</div>
                       <div className="text-xs text-muted-foreground">{item.subtitle}</div>
@@ -219,21 +274,41 @@ function TeacherOverview() {
           <div className="space-y-3">
             <div className="space-y-1">
               <Label>Email address</Label>
-              <Input value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} placeholder="teacher@school.com" />
+              <Input
+                value={contactEmail}
+                onChange={(e) => setContactEmail(e.target.value)}
+                placeholder="teacher@school.com"
+              />
             </div>
             <div className="space-y-1">
               <Label>Phone number</Label>
-              <Input value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} placeholder="+260 ..." />
+              <Input
+                value={contactPhone}
+                onChange={(e) => setContactPhone(e.target.value)}
+                placeholder="+260 ..."
+              />
             </div>
             <div className="space-y-1">
               <Label>WhatsApp</Label>
-              <Input value={contactWhatsapp} onChange={(e) => setContactWhatsapp(e.target.value)} placeholder="+260 ..." />
+              <Input
+                value={contactWhatsapp}
+                onChange={(e) => setContactWhatsapp(e.target.value)}
+                placeholder="+260 ..."
+              />
             </div>
             <div className="space-y-1">
               <Label>Social links</Label>
-              <Input value={contactSocials} onChange={(e) => setContactSocials(e.target.value)} placeholder="Telegram @name" />
+              <Input
+                value={contactSocials}
+                onChange={(e) => setContactSocials(e.target.value)}
+                placeholder="Telegram @name"
+              />
             </div>
-            <Button onClick={() => saveContact.mutate()} disabled={saveContact.isPending} className="w-full">
+            <Button
+              onClick={() => saveContact.mutate()}
+              disabled={saveContact.isPending}
+              className="w-full"
+            >
               {saveContact.isPending ? "Saving..." : "Save contact details"}
             </Button>
           </div>
@@ -270,13 +345,17 @@ function TeacherOverview() {
                 <li key={p.id} className="py-3 flex items-center justify-between gap-3">
                   <div>
                     <div className="font-medium text-sm">{p.full_name || "Parent"}</div>
-                    <div className="text-xs text-muted-foreground">{p.related_student_names || "Linked student"}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {p.related_student_names || "Linked student"}
+                    </div>
                     <div className="text-xs text-muted-foreground mt-1">
                       {p.contact_email || ""} {p.contact_phone ? `· ${p.contact_phone}` : ""}
                     </div>
                   </div>
                   <Button asChild size="sm" variant="outline">
-                    <Link to="/messages" search={{ contact: p.id }}>Message</Link>
+                    <Link to="/messages" search={{ contact: p.id }}>
+                      Message
+                    </Link>
                   </Button>
                 </li>
               ))}
@@ -288,7 +367,17 @@ function TeacherOverview() {
   );
 }
 
-function Stat({ icon: Icon, label, value, color }: { icon: any; label: string; value: string | number; color?: string }) {
+function Stat({
+  icon: Icon,
+  label,
+  value,
+  color,
+}: {
+  icon: LucideIcon;
+  label: string;
+  value: string | number;
+  color?: string;
+}) {
   return (
     <Card className="p-5">
       <div className="flex items-center justify-between">

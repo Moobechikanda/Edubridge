@@ -1,127 +1,291 @@
+import { useEffect, useState, type FormEvent } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect } from "react";
+import {
+  ArrowRight,
+  Building2,
+  Eye,
+  EyeOff,
+  GraduationCap,
+  LockKeyhole,
+  Mail,
+  Presentation,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { useAuth, dashboardPathFor } from "@/lib/auth";
-import { GraduationCap, MessagesSquare, LineChart, Users, ShieldCheck, BookOpen } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { dashboardPathFor } from "@/lib/auth";
 
 export const Route = createFileRoute("/")({
-  component: Landing,
+  component: LoginPage,
 });
 
-function Landing() {
-  const { session, role, loading } = useAuth();
+const REMEMBER_SESSION_KEY = "edubridge:remember-session";
+
+function LoginPage() {
   const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(true);
+  const [showPassword, setShowPassword] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [resetBusy, setResetBusy] = useState(false);
 
   useEffect(() => {
-    if (!loading && session && role) {
-      navigate({ to: dashboardPathFor(role) });
+    const savedPreference = window.localStorage.getItem(REMEMBER_SESSION_KEY);
+    if (savedPreference !== null) setRememberMe(savedPreference !== "false");
+  }, []);
+
+  async function onSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setBusy(true);
+    window.localStorage.setItem(REMEMBER_SESSION_KEY, String(rememberMe));
+
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+
+      const { data: roleRecord, error: roleError } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", data.user.id)
+        .maybeSingle();
+      if (roleError) throw roleError;
+      if (!roleRecord) {
+        toast.error(
+          "This account has no assigned portal. Please contact your school administrator.",
+        );
+        await supabase.auth.signOut();
+        return;
+      }
+
+      toast.success("Welcome back!");
+      await navigate({ to: dashboardPathFor(roleRecord.role) });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to sign in. Please try again.");
+    } finally {
+      setBusy(false);
     }
-  }, [loading, session, role, navigate]);
+  }
+
+  async function onForgotPassword() {
+    const address = email.trim();
+    if (!address) {
+      toast.error("Enter your email address first.");
+      return;
+    }
+
+    setResetBusy(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(address, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) toast.error(error.message);
+      else toast.success("If an account exists for that email, a reset link is on its way.");
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Unable to request a reset link. Please try again.",
+      );
+    } finally {
+      setResetBusy(false);
+    }
+  }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Nav */}
-      <header className="border-b bg-background/80 backdrop-blur sticky top-0 z-30">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          <Link to="/" className="flex items-center gap-2 font-semibold text-lg">
-            <span className="grid h-8 w-8 place-items-center rounded-lg bg-primary text-primary-foreground">
-              <GraduationCap className="h-5 w-5" />
-            </span>
-            EduBridge
-          </Link>
-          <div className="flex items-center gap-2">
-            <Link to="/auth"><Button variant="ghost">Sign in</Button></Link>
-            <Link to="/auth" search={{ mode: "signup" }}><Button>Get started</Button></Link>
-          </div>
-        </div>
-      </header>
-
-      {/* Hero */}
-      <section
-        className="relative overflow-hidden"
-        style={{ background: "var(--gradient-soft)" }}
-      >
-        <div className="container mx-auto px-4 py-20 md:py-28 text-center">
-          <span className="inline-flex items-center gap-2 rounded-full border bg-card px-3 py-1 text-xs font-medium text-muted-foreground">
-            <span className="h-1.5 w-1.5 rounded-full bg-success" /> Built for modern schools
-          </span>
-          <h1 className="mt-6 text-4xl md:text-6xl font-bold tracking-tight text-foreground">
-            One platform for the<br />
-            <span
-              className="bg-clip-text text-transparent"
-              style={{ backgroundImage: "var(--gradient-hero)" }}
-            >
-              entire school community
-            </span>
-          </h1>
-          <p className="mt-6 max-w-2xl mx-auto text-lg text-muted-foreground">
-            EduBridge connects teachers, students, parents and administrators —
-            unifying communication, classroom management and progress tracking in one place.
-          </p>
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <Link to="/auth" search={{ mode: "signup" }}>
-              <Button size="lg" className="shadow-lg">Create your account</Button>
+    <main className="edu-login-page">
+      <section className="edu-login-top">
+        <div className="edu-campus-panel">
+          <div className="edu-campus-image" aria-hidden="true" />
+          <div className="edu-campus-overlay" aria-hidden="true" />
+          <div className="edu-campus-content">
+            <Link className="edu-brand" to="/" aria-label="EduBridge home">
+              <span className="edu-brand-icon">
+                <GraduationCap aria-hidden="true" />
+              </span>
+              <span>EduBridge</span>
             </Link>
-            <Link to="/auth"><Button size="lg" variant="outline">I already have an account</Button></Link>
+            <div className="edu-campus-copy">
+              <p className="edu-tagline">Connecting students, parents, teachers and departments.</p>
+              <h1>
+                Better Communication.
+                <br />
+                Brighter Futures.
+              </h1>
+              <p className="edu-campus-description">
+                EduBridge connects the school community through accessible academic information,
+                timely communication and improved student progress monitoring.
+              </p>
+            </div>
           </div>
         </div>
-      </section>
 
-      {/* Roles */}
-      <section className="container mx-auto px-4 py-20">
-        <div className="text-center max-w-2xl mx-auto">
-          <h2 className="text-3xl md:text-4xl font-bold">A portal for every role</h2>
-          <p className="mt-3 text-muted-foreground">
-            Tailored experiences that put the right tools in the right hands.
-          </p>
-        </div>
+        <div className="edu-login-panel">
+          <section className="edu-login-card" aria-labelledby="login-heading">
+            <h2 id="login-heading">Welcome Back</h2>
+            <p className="edu-login-subtitle">
+              Log in to your EduBridge account to access your dashboard.
+            </p>
 
-        <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-          {[
-            { icon: BookOpen, title: "Teachers", desc: "Manage classes, assignments and feedback." },
-            { icon: GraduationCap, title: "Students", desc: "Access materials and track learning progress." },
-            { icon: Users, title: "Parents", desc: "Stay informed about your child's school life." },
-            { icon: ShieldCheck, title: "Admins", desc: "Oversee communication and school analytics." },
-          ].map((r) => (
-            <Card key={r.title} className="p-6 hover:shadow-lg transition-shadow" style={{ boxShadow: "var(--shadow-card)" }}>
-              <div className="grid h-11 w-11 place-items-center rounded-lg bg-accent text-accent-foreground">
-                <r.icon className="h-5 w-5" />
+            <form className="edu-login-form" onSubmit={onSubmit}>
+              <label className="edu-field-label" htmlFor="login-email">
+                Email address
+              </label>
+              <div className="edu-input-wrap">
+                <Mail className="edu-input-icon" aria-hidden="true" />
+                <input
+                  id="login-email"
+                  className="edu-login-input"
+                  type="email"
+                  autoComplete="email"
+                  placeholder="Enter your email address"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  required
+                />
               </div>
-              <h3 className="mt-4 font-semibold text-lg">{r.title}</h3>
-              <p className="mt-1 text-sm text-muted-foreground">{r.desc}</p>
-            </Card>
-          ))}
-        </div>
-      </section>
 
-      {/* Features */}
-      <section className="border-t bg-secondary/40">
-        <div className="container mx-auto px-4 py-20">
-          <div className="grid gap-10 md:grid-cols-3">
-            {[
-              { icon: MessagesSquare, title: "Unified messaging", desc: "Announcements and direct messages between every stakeholder." },
-              { icon: LineChart, title: "Progress tracking", desc: "Real-time visibility into assignments, grades and attendance." },
-              { icon: ShieldCheck, title: "Secure by design", desc: "Role-based access keeps student data private and protected." },
-            ].map((f) => (
-              <div key={f.title}>
-                <div className="grid h-11 w-11 place-items-center rounded-lg bg-primary text-primary-foreground">
-                  <f.icon className="h-5 w-5" />
-                </div>
-                <h3 className="mt-4 font-semibold text-lg">{f.title}</h3>
-                <p className="mt-2 text-sm text-muted-foreground">{f.desc}</p>
+              <div className="edu-password-heading">
+                <label className="edu-field-label" htmlFor="login-password">
+                  Password
+                </label>
+                <button
+                  className="edu-forgot-link"
+                  type="button"
+                  onClick={onForgotPassword}
+                  disabled={resetBusy}
+                >
+                  {resetBusy ? "Sending…" : "Forgot password?"}
+                </button>
               </div>
-            ))}
-          </div>
+              <div className="edu-input-wrap">
+                <LockKeyhole className="edu-input-icon" aria-hidden="true" />
+                <input
+                  id="login-password"
+                  className="edu-login-input edu-password-input"
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="current-password"
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  required
+                />
+                <button
+                  className="edu-password-toggle"
+                  type="button"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-pressed={showPassword}
+                  onClick={() => setShowPassword((visible) => !visible)}
+                >
+                  {showPassword ? <EyeOff aria-hidden="true" /> : <Eye aria-hidden="true" />}
+                </button>
+              </div>
+
+              <div className="edu-login-options">
+                <label className="edu-remember-label" htmlFor="remember-me">
+                  <input
+                    id="remember-me"
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(event) => setRememberMe(event.target.checked)}
+                  />
+                  <span>Remember me</span>
+                </label>
+              </div>
+
+              <Button className="edu-sign-in-button" type="submit" disabled={busy}>
+                {busy ? (
+                  "Signing in…"
+                ) : (
+                  <>
+                    Sign In <ArrowRight aria-hidden="true" />
+                  </>
+                )}
+              </Button>
+            </form>
+
+            <div className="edu-account-note">
+              <p>Have an account? Sign in through your role portal.</p>
+            </div>
+            <nav className="edu-portal-links" aria-label="Choose your sign-in portal">
+              <Link to="/login/$role" params={{ role: "student" }}>
+                Student portal
+              </Link>
+              <Link to="/login/$role" params={{ role: "parent" }}>
+                Parent portal
+              </Link>
+              <Link to="/login/$role" params={{ role: "teacher" }}>
+                Teacher portal
+              </Link>
+            </nav>
+          </section>
         </div>
       </section>
 
-      <footer className="border-t">
-        <div className="container mx-auto px-4 py-8 text-sm text-muted-foreground flex justify-between">
-          <span>© {new Date().getFullYear()} EduBridge</span>
-          <span>University of Zambia</span>
+      <section className="edu-role-section" aria-label="EduBridge roles">
+        <div className="edu-role-grid">
+          <RoleFeature
+            icon={GraduationCap}
+            tone="student"
+            title="Students"
+            description="View subjects, assignments, attendance and academic results."
+          />
+          <RoleFeature
+            icon={Users}
+            tone="parent"
+            title="Parents"
+            description="Monitor your child's academic progress, attendance and school announcements."
+          />
+          <RoleFeature
+            icon={Presentation}
+            tone="teacher"
+            title="Teachers & Lecturers"
+            description="Record attendance, manage student results and share important announcements."
+          />
+          <RoleFeature
+            icon={Building2}
+            tone="department"
+            title="Departments"
+            description="Manage academic records, coordinate communication and publish departmental updates."
+          />
         </div>
+      </section>
+
+      <footer className="edu-login-footer">
+        EDUCATION <span>|</span> COMMUNICATION <span>|</span> PROGRESS
       </footer>
-    </div>
+    </main>
+  );
+}
+
+function RoleFeature({
+  icon: Icon,
+  tone,
+  title,
+  description,
+}: {
+  icon: LucideIcon;
+  tone: "student" | "parent" | "teacher" | "department";
+  title: string;
+  description: string;
+}) {
+  return (
+    <article className="edu-role-feature">
+      <span className={`edu-role-icon edu-role-icon-${tone}`}>
+        <Icon aria-hidden="true" />
+      </span>
+      <div>
+        <h3>{title}</h3>
+        <p>{description}</p>
+      </div>
+    </article>
   );
 }

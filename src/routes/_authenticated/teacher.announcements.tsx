@@ -9,7 +9,11 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PortalShell } from "../_authenticated";
@@ -23,9 +27,17 @@ export const Route = createFileRoute("/_authenticated/teacher/announcements")({
   head: () => ({
     meta: [
       { title: "Teacher announcements | EduBridge" },
-      { name: "description", content: "Post class announcements, share school-wide news with parents and students, and message families directly." },
+      {
+        name: "description",
+        content:
+          "Post class announcements, share school-wide news with parents and students, and message families directly.",
+      },
       { property: "og:title", content: "Teacher announcements | EduBridge" },
-      { property: "og:description", content: "Post class announcements, share school news, and message parents, students and administrators." },
+      {
+        property: "og:description",
+        content:
+          "Post class announcements, share school news, and message parents, students and administrators.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -62,9 +74,15 @@ function TeacherAnnouncements() {
           <TabsTrigger value="school">School-wide news</TabsTrigger>
           <TabsTrigger value="direct">Direct messages</TabsTrigger>
         </TabsList>
-        <TabsContent value="class" className="mt-4"><ClassPanel /></TabsContent>
-        <TabsContent value="school" className="mt-4"><SchoolPanel /></TabsContent>
-        <TabsContent value="direct" className="mt-4"><DirectPanel /></TabsContent>
+        <TabsContent value="class" className="mt-4">
+          <ClassPanel />
+        </TabsContent>
+        <TabsContent value="school" className="mt-4">
+          <SchoolPanel />
+        </TabsContent>
+        <TabsContent value="direct" className="mt-4">
+          <DirectPanel />
+        </TabsContent>
       </Tabs>
     </PortalShell>
   );
@@ -77,7 +95,6 @@ function ClassPanel() {
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [publishAt, setPublishAt] = useState("");
-
 
   const { data: classes = [] } = useQuery({
     queryKey: ["teacher-classes-simple", user?.id],
@@ -108,7 +125,6 @@ function ClassPanel() {
     },
   });
 
-
   const classNames = new Map(classes.map((c) => [c.id, c.name]));
 
   const { data: seenStats = {} } = useQuery({
@@ -125,7 +141,10 @@ function ClassPanel() {
           return [p.id, row] as const;
         }),
       );
-      return Object.fromEntries(entries) as Record<string, { seen_count: number; total_recipients: number } | null>;
+      return Object.fromEntries(entries) as Record<
+        string,
+        { seen_count: number; total_recipients: number } | null
+      >;
     },
   });
 
@@ -144,12 +163,13 @@ function ClassPanel() {
     },
     onSuccess: () => {
       toast.success(publishAt ? "Announcement scheduled" : "Announcement sent to the class");
-      setTitle(""); setBody(""); setPublishAt("");
+      setTitle("");
+      setBody("");
+      setPublishAt("");
       qc.invalidateQueries({ queryKey: ["teacher-class-announcements"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
-
 
   const remove = useMutation({
     mutationFn: async (id: string) => {
@@ -170,9 +190,15 @@ function ClassPanel() {
         <div className="space-y-1.5">
           <Label>Class</Label>
           <Select value={classId} onValueChange={setClassId}>
-            <SelectTrigger><SelectValue placeholder="Select a class" /></SelectTrigger>
+            <SelectTrigger>
+              <SelectValue placeholder="Select a class" />
+            </SelectTrigger>
             <SelectContent>
-              {classes.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+              {classes.map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  {c.name}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -182,11 +208,20 @@ function ClassPanel() {
         </div>
         <div className="space-y-1.5">
           <Label>Message</Label>
-          <Textarea value={body} onChange={(e) => setBody(e.target.value)} rows={5} maxLength={2000} />
+          <Textarea
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            rows={5}
+            maxLength={2000}
+          />
         </div>
         <div className="space-y-1.5">
           <Label>Publish at (optional)</Label>
-          <Input type="datetime-local" value={publishAt} onChange={(e) => setPublishAt(e.target.value)} />
+          <Input
+            type="datetime-local"
+            value={publishAt}
+            onChange={(e) => setPublishAt(e.target.value)}
+          />
           <p className="text-xs text-muted-foreground">Leave empty to publish immediately.</p>
         </div>
         <Button onClick={() => post.mutate()} disabled={post.isPending}>
@@ -204,7 +239,9 @@ function ClassPanel() {
                 <div>
                   <div className="flex items-center gap-2">
                     <p className="font-medium">{p.title}</p>
-                    {new Date(p.publish_at) > new Date() && <Badge variant="outline">Scheduled</Badge>}
+                    {new Date(p.publish_at) > new Date() && (
+                      <Badge variant="outline">Scheduled</Badge>
+                    )}
                   </div>
                   <p className="text-sm text-muted-foreground whitespace-pre-wrap">{p.body}</p>
                   <p className="mt-1 text-xs text-muted-foreground">
@@ -241,7 +278,6 @@ function SchoolPanel() {
   const [pinned, setPinned] = useState(false);
   const [publishAt, setPublishAt] = useState("");
 
-
   const { data: mine = [] } = useQuery({
     queryKey: ["teacher-school-news", user?.id],
     enabled: !!user,
@@ -260,20 +296,27 @@ function SchoolPanel() {
     mutationFn: async () => {
       if (!title.trim() || !body.trim()) throw new Error("Title and body required");
       const { error } = await supabase.from("school_announcements").insert({
-        title: title.trim(), body: body.trim(), category, pinned, posted_by: user!.id,
+        title: title.trim(),
+        body: body.trim(),
+        category,
+        pinned,
+        posted_by: user!.id,
         publish_at: publishAt ? new Date(publishAt).toISOString() : new Date().toISOString(),
       });
       if (error) throw error;
     },
     onSuccess: () => {
       toast.success("Sent to an administrator for review");
-      setTitle(""); setBody(""); setPinned(false); setCategory("news"); setPublishAt("");
+      setTitle("");
+      setBody("");
+      setPinned(false);
+      setCategory("news");
+      setPublishAt("");
       qc.invalidateQueries({ queryKey: ["teacher-school-news"] });
       qc.invalidateQueries({ queryKey: ["school-announcements"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
-
 
   const remove = useMutation({
     mutationFn: async (id: string) => {
@@ -295,9 +338,15 @@ function SchoolPanel() {
         <div className="space-y-1.5">
           <Label>Category</Label>
           <Select value={category} onValueChange={(v) => setCategory(v as typeof category)}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
-              {CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+              {CATEGORIES.map((c) => (
+                <SelectItem key={c} value={c}>
+                  {c}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -307,12 +356,23 @@ function SchoolPanel() {
         </div>
         <div className="space-y-1.5">
           <Label>Body</Label>
-          <Textarea value={body} onChange={(e) => setBody(e.target.value)} rows={5} maxLength={2000} />
+          <Textarea
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            rows={5}
+            maxLength={2000}
+          />
         </div>
         <div className="space-y-1.5">
           <Label>Publish at (optional)</Label>
-          <Input type="datetime-local" value={publishAt} onChange={(e) => setPublishAt(e.target.value)} />
-          <p className="text-xs text-muted-foreground">Leave empty to publish as soon as it's approved.</p>
+          <Input
+            type="datetime-local"
+            value={publishAt}
+            onChange={(e) => setPublishAt(e.target.value)}
+          />
+          <p className="text-xs text-muted-foreground">
+            Leave empty to publish as soon as it's approved.
+          </p>
         </div>
         <label className="flex items-center gap-2 text-sm">
           <Checkbox checked={pinned} onCheckedChange={(v) => setPinned(v === true)} /> Pin to top
@@ -324,7 +384,9 @@ function SchoolPanel() {
 
       <Card className="p-5 space-y-3">
         <h3 className="font-semibold">Your school news posts</h3>
-        {mine.length === 0 && <p className="text-sm text-muted-foreground">You haven't posted school news yet.</p>}
+        {mine.length === 0 && (
+          <p className="text-sm text-muted-foreground">You haven't posted school news yet.</p>
+        )}
         <ul className="space-y-3">
           {mine.map((n) => (
             <li key={n.id} className="rounded-lg border p-3">
@@ -334,12 +396,20 @@ function SchoolPanel() {
                     <Badge variant="secondary">{n.category}</Badge>
                     <Badge
                       variant={
-                        n.status === "approved" ? "default" : n.status === "rejected" ? "destructive" : "outline"
+                        n.status === "approved"
+                          ? "default"
+                          : n.status === "rejected"
+                            ? "destructive"
+                            : "outline"
                       }
                     >
                       {n.status === "approved"
-                        ? new Date(n.publish_at) > new Date() ? "Approved · scheduled" : "Published"
-                        : n.status === "rejected" ? "Rejected" : "Pending review"}
+                        ? new Date(n.publish_at) > new Date()
+                          ? "Approved · scheduled"
+                          : "Published"
+                        : n.status === "rejected"
+                          ? "Rejected"
+                          : "Pending review"}
                     </Badge>
                     {n.pinned && <Pin className="h-3.5 w-3.5 text-muted-foreground" />}
                   </div>
@@ -373,10 +443,13 @@ function DirectPanel() {
       <h3 className="font-semibold">Message a person directly</h3>
       <p className="text-sm text-muted-foreground">
         Send private messages to your students, their parents, other teachers and administrators.
-        Replies appear in real time and trigger a notification if the recipient allows message alerts.
+        Replies appear in real time and trigger a notification if the recipient allows message
+        alerts.
       </p>
       <Button asChild>
-        <Link to="/messages"><MessageSquare className="mr-2 h-4 w-4" /> Open messages</Link>
+        <Link to="/messages">
+          <MessageSquare className="mr-2 h-4 w-4" /> Open messages
+        </Link>
       </Button>
     </Card>
   );

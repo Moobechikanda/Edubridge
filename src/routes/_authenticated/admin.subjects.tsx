@@ -43,10 +43,7 @@ function AdminSubjects() {
   const { data: subjects = [], isLoading } = useQuery({
     queryKey: ["admin-subjects"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("subjects")
-        .select("*")
-        .order("name");
+      const { data, error } = await supabase.from("subjects").select("*").order("name");
       if (error) throw error;
       return data as SubjectRow[];
     },
@@ -55,7 +52,11 @@ function AdminSubjects() {
   const save = useMutation({
     mutationFn: async () => {
       if (!name.trim()) throw new Error("Name is required");
-      const payload = { name: name.trim(), code: code.trim() || null, description: description.trim() || null };
+      const payload = {
+        name: name.trim(),
+        code: code.trim() || null,
+        description: description.trim() || null,
+      };
       if (editing) {
         const { error } = await supabase.from("subjects").update(payload).eq("id", editing.id);
         if (error) throw error;
@@ -73,7 +74,7 @@ function AdminSubjects() {
       setCode("");
       setDescription("");
     },
-    onError: (e: any) => toast.error(e.message ?? "Save failed"),
+    onError: (e: Error) => toast.error(e.message || "Save failed"),
   });
 
   const remove = useMutation({
@@ -85,7 +86,7 @@ function AdminSubjects() {
       toast.success("Subject deleted");
       qc.invalidateQueries({ queryKey: ["admin-subjects"] });
     },
-    onError: (e: any) => toast.error(e.message ?? "Delete failed"),
+    onError: (e: Error) => toast.error(e.message || "Delete failed"),
   });
 
   const openDialog = (s?: SubjectRow) => {
@@ -104,7 +105,10 @@ function AdminSubjects() {
   };
 
   return (
-    <PortalShell title="Subjects" subtitle="Manage the Zambia curriculum starter subjects and your school's own choices.">
+    <PortalShell
+      title="Subjects"
+      subtitle="Manage the Zambia curriculum starter subjects and your school's own choices."
+    >
       <div className="mb-4 flex justify-end">
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
@@ -119,19 +123,36 @@ function AdminSubjects() {
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Name</Label>
-                <Input id="name" value={name} onChange={(e) => setName(e.target.value)} maxLength={100} />
+                <Input
+                  id="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  maxLength={100}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="code">Code (optional)</Label>
-                <Input id="code" value={code} onChange={(e) => setCode(e.target.value)} maxLength={20} />
+                <Input
+                  id="code"
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                  maxLength={20}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="desc">Description</Label>
-                <Input id="desc" value={description} onChange={(e) => setDescription(e.target.value)} maxLength={500} />
+                <Input
+                  id="desc"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  maxLength={500}
+                />
               </div>
             </div>
             <DialogFooter>
-              <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
+              <Button variant="ghost" onClick={() => setOpen(false)}>
+                Cancel
+              </Button>
               <Button onClick={() => save.mutate()} disabled={save.isPending}>
                 {save.isPending ? "Saving…" : "Save"}
               </Button>
@@ -160,9 +181,13 @@ function AdminSubjects() {
               {subjects.map((s) => (
                 <tr key={s.id}>
                   <td className="px-4 py-3 font-medium">{s.name}</td>
-                  <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{s.code ?? "—"}</td>
+                  <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
+                    {s.code ?? "—"}
+                  </td>
                   <td className="px-4 py-3 text-muted-foreground">
-                    {s.min_grade && s.max_grade ? `Grades ${s.min_grade}-${s.max_grade}` : "All grades"}
+                    {s.min_grade && s.max_grade
+                      ? `Grades ${s.min_grade}-${s.max_grade}`
+                      : "All grades"}
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">{s.description ?? "—"}</td>
                   <td className="px-4 py-3 flex items-center gap-1">

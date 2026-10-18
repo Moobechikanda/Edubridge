@@ -1,5 +1,12 @@
 import { createFileRoute, Link, Outlet, useLocation } from "@tanstack/react-router";
-import { BookOpen, ClipboardList, LayoutDashboard, CalendarClock, Megaphone, CalendarDays } from "lucide-react";
+import {
+  BookOpen,
+  ClipboardList,
+  LayoutDashboard,
+  CalendarClock,
+  Megaphone,
+  CalendarDays,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { RoleGuard } from "@/components/RoleGuard";
 

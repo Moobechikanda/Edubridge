@@ -48,11 +48,14 @@ function NotificationSettings() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const toggle = (key: keyof Prefs) => (v: boolean) =>
-    update.mutate({ ...prefs, [key]: v });
+  const toggle = (key: keyof Prefs) => (v: boolean) => update.mutate({ ...prefs, [key]: v });
 
   const rows: { key: keyof Prefs; label: string; desc: string }[] = [
-    { key: "announcements", label: "Class announcements", desc: "When a teacher posts an announcement in your class." },
+    {
+      key: "announcements",
+      label: "Class announcements",
+      desc: "When a teacher posts an announcement in your class.",
+    },
     { key: "grades", label: "Grades", desc: "When a teacher posts or updates a grade." },
     { key: "messages", label: "Direct messages", desc: "When someone sends you a message." },
   ];
@@ -67,7 +70,9 @@ function NotificationSettings() {
             {rows.map((r) => (
               <li key={r.key} className="flex items-start justify-between gap-6 p-4">
                 <div className="min-w-0">
-                  <Label htmlFor={r.key} className="text-base">{r.label}</Label>
+                  <Label htmlFor={r.key} className="text-base">
+                    {r.label}
+                  </Label>
                   <p className="text-sm text-muted-foreground mt-1">{r.desc}</p>
                 </div>
                 <Switch

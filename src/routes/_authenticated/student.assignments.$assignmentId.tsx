@@ -49,7 +49,7 @@ function AssignmentDetail() {
 
   useEffect(() => {
     setContent(sub?.content ?? "");
-  }, [sub?.id]);
+  }, [sub?.content]);
 
   const submit = useMutation({
     mutationFn: async () => {
@@ -76,7 +76,7 @@ function AssignmentDetail() {
       qc.invalidateQueries({ queryKey: ["student-assignments"] });
       qc.invalidateQueries({ queryKey: ["student-overview"] });
     },
-    onError: (e: any) => toast.error(e.message ?? "Submit failed"),
+    onError: (e: Error) => toast.error(e.message || "Submit failed"),
   });
 
   if (!assignment)
@@ -93,7 +93,7 @@ function AssignmentDetail() {
       </Button>
       <h1 className="text-3xl font-bold tracking-tight">{assignment.title}</h1>
       <p className="text-muted-foreground mt-1">
-        {(assignment as any).classes?.name} · {assignment.points} points
+        {assignment.classes?.name} · {assignment.points} points
         {assignment.due_date && ` · Due ${new Date(assignment.due_date).toLocaleString()}`}
       </p>
       {assignment.description && (
@@ -108,7 +108,9 @@ function AssignmentDetail() {
           </div>
           {sub!.feedback && (
             <div className="mt-3">
-              <div className="text-xs uppercase text-muted-foreground tracking-wide">Teacher feedback</div>
+              <div className="text-xs uppercase text-muted-foreground tracking-wide">
+                Teacher feedback
+              </div>
               <p className="mt-1 text-sm whitespace-pre-wrap">{sub!.feedback}</p>
             </div>
           )}

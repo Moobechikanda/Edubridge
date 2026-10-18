@@ -4,19 +4,11 @@ import { ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth, dashboardPathFor, type AppRole } from "@/lib/auth";
 
-export function RoleGuard({
-  allow,
-  children,
-}: {
-  allow: AppRole[];
-  children: ReactNode;
-}) {
+export function RoleGuard({ allow, children }: { allow: AppRole[]; children: ReactNode }) {
   const { role, loading } = useAuth();
   if (loading) {
     return (
-      <div className="container mx-auto py-16 text-center text-muted-foreground">
-        Loading…
-      </div>
+      <div className="container mx-auto py-16 text-center text-muted-foreground">Loading…</div>
     );
   }
   if (!role || !allow.includes(role)) {

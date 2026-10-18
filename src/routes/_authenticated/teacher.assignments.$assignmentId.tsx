@@ -30,6 +30,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
 import {
@@ -43,12 +44,13 @@ import {
   Send,
   FileText,
   Users,
+  type LucideIcon,
 } from "lucide-react";
 
 type SubmissionRow = {
   student_id: string;
   full_name: string;
-  submission: any | null;
+  submission: Database["public"]["Tables"]["submissions"]["Row"] | null;
   status: string;
 };
 
@@ -82,11 +84,11 @@ function AssignmentGrading() {
     queryFn: async () => {
       const { data, error } = await supabase.rpc("get_assignment_stats", {
         _assignment_id: assignmentId,
-        _class_id: (assignment as any)?.class_id,
+        _class_id: assignment!.class_id,
       });
       if (error) throw error;
       const row = Array.isArray(data) ? data[0] : data;
-      return row as any;
+      return row;
     },
   });
 
@@ -94,7 +96,7 @@ function AssignmentGrading() {
     queryKey: ["assignment-roster", assignmentId],
     enabled: !!assignment,
     queryFn: async () => {
-      const classId = (assignment as any).class_id;
+      const classId = assignment!.class_id;
       const { data: enr } = await supabase
         .from("enrollments")
         .select("student_id")
@@ -113,7 +115,7 @@ function AssignmentGrading() {
         if (sub) {
           if (sub.graded_at) status = "completed";
           else if (sub.submitted_at) {
-            const dueDate = (assignment as any)?.due_date;
+            const dueDate = assignment?.due_date;
             if (dueDate && new Date(sub.submitted_at) > new Date(dueDate)) status = "late";
             else status = "in_progress";
           }
@@ -143,7 +145,7 @@ function AssignmentGrading() {
   if (!assignment)
     return <div className="container mx-auto px-4 py-10 text-muted-foreground">Loading…</div>;
 
-  const cls = (assignment as any).classes;
+  const cls = assignment.classes;
 
   return (
     <div className="container mx-auto px-4 py-10">
@@ -165,7 +167,9 @@ function AssignmentGrading() {
             {cls?.subject && <span>· {cls.subject}</span>}
             <span>· {assignment.points} pts</span>
             {assignment.due_date && (
-              <span className="text-destructive">· Due {new Date(assignment.due_date).toLocaleString()}</span>
+              <span className="text-destructive">
+                · Due {new Date(assignment.due_date).toLocaleString()}
+              </span>
             )}
           </p>
           {assignment.description && (
@@ -185,14 +189,31 @@ function AssignmentGrading() {
           <StatCard label="Attempted" value={stats.attempted ?? 0} highlight />
           <StatCard label="Completed" value={stats.completed ?? 0} color="text-green-600" />
           <StatCard label="In Progress" value={stats.in_progress ?? 0} color="text-amber-600" />
-          <StatCard label="Not Attempted" value={stats.not_attempted ?? 0} color="text-muted-foreground" />
+          <StatCard
+            label="Not Attempted"
+            value={stats.not_attempted ?? 0}
+            color="text-muted-foreground"
+          />
           <StatCard label="Missed" value={stats.missed ?? 0} color="text-destructive" />
           <StatCard label="Late" value={stats.late ?? 0} color="text-orange-600" />
-          <StatCard label="Pending Marking" value={stats.pending_marking ?? 0} color="text-amber-600" />
+          <StatCard
+            label="Pending Marking"
+            value={stats.pending_marking ?? 0}
+            color="text-amber-600"
+          />
           <StatCard label="Marked" value={stats.marked ?? 0} color="text-green-600" />
-          <StatCard label="Avg Score" value={stats.avg_score != null ? `${Number(stats.avg_score).toFixed(1)}` : "—"} />
-          <StatCard label="Highest" value={stats.highest_score != null ? Number(stats.highest_score).toFixed(1) : "—"} />
-          <StatCard label="Lowest" value={stats.lowest_score != null ? Number(stats.lowest_score).toFixed(1) : "—"} />
+          <StatCard
+            label="Avg Score"
+            value={stats.avg_score != null ? `${Number(stats.avg_score).toFixed(1)}` : "—"}
+          />
+          <StatCard
+            label="Highest"
+            value={stats.highest_score != null ? Number(stats.highest_score).toFixed(1) : "—"}
+          />
+          <StatCard
+            label="Lowest"
+            value={stats.lowest_score != null ? Number(stats.lowest_score).toFixed(1) : "—"}
+          />
         </div>
       )}
 
@@ -271,12 +292,12 @@ function AssignmentGrading() {
                     {r.submission?.feedback ?? "—"}
                   </TableCell>
                   <TableCell>
-                    <Button
-                      asChild
-                      size="sm"
-                      variant="secondary"
-                    >
-                      <Link to="/teacher/assignments/$assignmentId" params={{ assignmentId }} search={{ student: r.student_id }}>
+                    <Button asChild size="sm" variant="secondary">
+                      <Link
+                        to="/teacher/assignments/$assignmentId"
+                        params={{ assignmentId }}
+                        search={{ student: r.student_id }}
+                      >
                         View
                       </Link>
                     </Button>
@@ -312,7 +333,7 @@ function StatCard({
 }: {
   label: string;
   value: string | number;
-  icon?: any;
+  icon?: LucideIcon;
   highlight?: boolean;
   color?: string;
 }) {
@@ -326,15 +347,23 @@ function StatCard({
 
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; className: string }> = {
-    completed: { label: "Completed", className: "bg-green-500/10 text-green-700 dark:text-green-400" },
-    in_progress: { label: "In Progress", className: "bg-amber-500/10 text-amber-700 dark:text-amber-400" },
+    completed: {
+      label: "Completed",
+      className: "bg-green-500/10 text-green-700 dark:text-green-400",
+    },
+    in_progress: {
+      label: "In Progress",
+      className: "bg-amber-500/10 text-amber-700 dark:text-amber-400",
+    },
     not_attempted: { label: "Not Attempted", className: "bg-muted text-muted-foreground" },
     missed: { label: "Missed", className: "bg-destructive/10 text-destructive" },
     late: { label: "Late", className: "bg-orange-500/10 text-orange-700 dark:text-orange-400" },
   };
   const s = map[status] ?? map.not_attempted;
   return (
-    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${s.className}`}>
+    <span
+      className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${s.className}`}
+    >
       {s.label}
     </span>
   );
@@ -358,7 +387,7 @@ function GradingDialog({
   useEffect(() => {
     setGrade(sub?.grade?.toString() ?? "");
     setFeedback(sub?.feedback ?? "");
-  }, [sub?.id]);
+  }, [sub?.feedback, sub?.grade, sub?.id]);
 
   const save = useMutation({
     mutationFn: async () => {
@@ -381,7 +410,7 @@ function GradingDialog({
       onSaved();
       onClose();
     },
-    onError: (e: any) => toast.error(e.message ?? "Save failed"),
+    onError: (e: Error) => toast.error(e.message || "Save failed"),
   });
 
   return (
@@ -394,7 +423,9 @@ function GradingDialog({
           {sub?.content && (
             <div>
               <Label className="text-xs text-muted-foreground">Submission</Label>
-              <Card className="p-3 mt-1 text-sm whitespace-pre-wrap bg-muted/50">{sub.content}</Card>
+              <Card className="p-3 mt-1 text-sm whitespace-pre-wrap bg-muted/50">
+                {sub.content}
+              </Card>
             </div>
           )}
           <div className="grid gap-3 sm:grid-cols-2">
@@ -426,7 +457,9 @@ function GradingDialog({
           </div>
         </div>
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button variant="ghost" onClick={onClose}>
+            Cancel
+          </Button>
           <Button onClick={() => save.mutate()} disabled={save.isPending}>
             {save.isPending ? "Saving…" : "Save feedback"}
           </Button>

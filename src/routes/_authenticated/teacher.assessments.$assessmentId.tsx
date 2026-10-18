@@ -6,7 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
 import { PortalShell } from "../_authenticated";
 import { supabase } from "@/integrations/supabase/client";
@@ -31,7 +36,8 @@ function ScoreEntry() {
       const { data, error } = await supabase
         .from("assessments")
         .select("id, title, points, class_id, scheduled_at")
-        .eq("id", assessmentId).maybeSingle();
+        .eq("id", assessmentId)
+        .maybeSingle();
       if (error) throw error;
       return data;
     },
@@ -42,12 +48,17 @@ function ScoreEntry() {
     enabled: !!assessment?.class_id,
     queryFn: async () => {
       const { data: enr } = await supabase
-        .from("enrollments").select("student_id").eq("class_id", assessment!.class_id);
+        .from("enrollments")
+        .select("student_id")
+        .eq("class_id", assessment!.class_id);
       const ids = (enr ?? []).map((e) => e.student_id);
       if (!ids.length) return [];
       const [{ data: profs }, { data: scores }] = await Promise.all([
         supabase.from("profiles").select("id, full_name").in("id", ids),
-        supabase.from("assessment_scores").select("student_id, score, feedback").eq("assessment_id", assessmentId),
+        supabase
+          .from("assessment_scores")
+          .select("student_id, score, feedback")
+          .eq("assessment_id", assessmentId),
       ]);
       const scoreMap = new Map((scores ?? []).map((s) => [s.student_id, s]));
       return (profs ?? []).map((p) => ({
@@ -60,19 +71,24 @@ function ScoreEntry() {
   });
 
   const [rows, setRows] = useState<Row[]>([]);
-  useEffect(() => { setRows(roster); }, [roster]);
+  useEffect(() => {
+    setRows(roster);
+  }, [roster]);
 
   const save = useMutation({
     mutationFn: async (row: Row) => {
       const score = parseFloat(row.score);
       if (Number.isNaN(score) || score < 0) throw new Error("Invalid score");
-      const { error } = await supabase.from("assessment_scores").upsert({
-        assessment_id: assessmentId,
-        student_id: row.student_id,
-        score,
-        feedback: row.feedback || null,
-        graded_by: user!.id,
-      }, { onConflict: "assessment_id,student_id" });
+      const { error } = await supabase.from("assessment_scores").upsert(
+        {
+          assessment_id: assessmentId,
+          student_id: row.student_id,
+          score,
+          feedback: row.feedback || null,
+          graded_by: user!.id,
+        },
+        { onConflict: "assessment_id,student_id" },
+      );
       if (error) throw error;
     },
     onSuccess: () => {
@@ -87,13 +103,20 @@ function ScoreEntry() {
     setRows((rs) => rs.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
 
   return (
-    <PortalShell title={assessment?.title ?? "Assessment scores"} subtitle={`Out of ${assessment?.points ?? 100} points.`}>
+    <PortalShell
+      title={assessment?.title ?? "Assessment scores"}
+      subtitle={`Out of ${assessment?.points ?? 100} points.`}
+    >
       <Button asChild variant="ghost" size="sm" className="mb-4 -ml-2">
-        <Link to="/teacher/assessments"><ArrowLeft className="h-4 w-4" /> Back</Link>
+        <Link to="/teacher/assessments">
+          <ArrowLeft className="h-4 w-4" /> Back
+        </Link>
       </Button>
       <Card className="p-0 overflow-hidden">
         {rows.length === 0 ? (
-          <div className="p-10 text-center text-sm text-muted-foreground">No students enrolled.</div>
+          <div className="p-10 text-center text-sm text-muted-foreground">
+            No students enrolled.
+          </div>
         ) : (
           <Table>
             <TableHeader>
@@ -109,15 +132,28 @@ function ScoreEntry() {
                 <TableRow key={r.student_id}>
                   <TableCell className="font-medium">{r.full_name || "—"}</TableCell>
                   <TableCell>
-                    <Input type="number" min={0} max={assessment?.points ?? undefined}
-                      value={r.score} onChange={(e) => update(i, { score: e.target.value })} />
+                    <Input
+                      type="number"
+                      min={0}
+                      max={assessment?.points ?? undefined}
+                      value={r.score}
+                      onChange={(e) => update(i, { score: e.target.value })}
+                    />
                   </TableCell>
                   <TableCell>
-                    <Textarea rows={1} value={r.feedback}
-                      onChange={(e) => update(i, { feedback: e.target.value })} />
+                    <Textarea
+                      rows={1}
+                      value={r.feedback}
+                      onChange={(e) => update(i, { feedback: e.target.value })}
+                    />
                   </TableCell>
                   <TableCell>
-                    <Button size="sm" variant="secondary" onClick={() => save.mutate(r)} disabled={save.isPending}>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => save.mutate(r)}
+                      disabled={save.isPending}
+                    >
                       <Save className="h-3.5 w-3.5 mr-1" /> Save
                     </Button>
                   </TableCell>
