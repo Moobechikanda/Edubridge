@@ -1,6 +1,13 @@
 {
-  "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "edubridge",
-  "compatibility_date": "2026-08-22",
-  "compatibility_flags": ["nodejs_compat"]
+    "$schema":  "node_modules/wrangler/config-schema.json",
+    "name":  "edubridge",
+    "compatibility_date":  "2026-08-22",
+    "compatibility_flags":  [
+                                "nodejs_compat"
+                            ],
+    "pages_build_output_dir":  "./dist",
+    "vars":  {
+                 "SUPABASE_URL":  "https://espkdxxnqhvodfmdpbly.supabase.co",
+                 "SUPABASE_PUBLISHABLE_KEY":  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzcGtkeHhucWh2b2RmbWRwYmx5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE5ODAxNjMsImV4cCI6MjEwNzU1NjE2M30.iDlrn8X4Svv2OtmwjrJSwuWxCCII570I4pUc1ltLMdc"
+             }
 }
