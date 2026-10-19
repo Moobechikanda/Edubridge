@@ -46,7 +46,6 @@ function AdminUsers() {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [qualifications, setQualifications] = useState("");
   const [parentEmail, setParentEmail] = useState("");
   const [role, setRole] = useState<AppRole>("student");
@@ -99,12 +98,10 @@ function AdminUsers() {
 
   const createUser = useMutation({
     mutationFn: async () => {
-      if (!name.trim() || !email.trim() || !password.trim()) throw new Error("All fields required");
-      if (password.length < 6) throw new Error("Password must be at least 6 characters");
+      if (!name.trim() || !email.trim()) throw new Error("Name and email are required");
       return createManagedUser({
         data: {
           email: email.trim(),
-          password: password.trim(),
           fullName: name.trim(),
           role: role as "student" | "teacher" | "parent",
           qualifications: qualifications.trim() || undefined,
@@ -113,20 +110,21 @@ function AdminUsers() {
       });
     },
     onSuccess: (result) => {
-      if (result.emailSent) {
+      if (result.studentCode && result.emailSent) {
         toast.success(
-          `Student account created. The student code was emailed to ${result.parentEmail}.`,
+          `Student account created. A password setup link and student code were emailed to ${result.parentEmail}.`,
         );
       } else if (result.studentCode) {
         toast.error(
           `${result.emailError} Student account is ready. Student code: ${result.studentCode}`,
         );
+      } else if (result.emailSent) {
+        toast.success("User created. A secure password setup link was emailed to the account holder.");
       } else {
-        toast.success("User created");
+        toast.error(`User was created but the password setup email failed: ${result.emailError}`);
       }
       setName("");
       setEmail("");
-      setPassword("");
       setQualifications("");
       setParentEmail("");
       setRole("student");
@@ -178,15 +176,7 @@ function AdminUsers() {
                   placeholder="student@school.com"
                 />
               </div>
-              <div className="space-y-1.5">
-                <Label>Password</Label>
-                <Input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Min 6 characters"
-                />
-              </div>
+              <p className="text-sm text-muted-foreground">We’ll email a secure, single-use password setup link. Passwords are never sent by email.</p>
               {role === "teacher" && (
                 <div className="space-y-1.5">
                   <Label>Qualifications</Label>
@@ -209,8 +199,7 @@ function AdminUsers() {
                     required
                   />
                   <p className="text-xs text-muted-foreground">
-                    Create the parent account first. The student linking code will be sent to this
-                    address.
+                    Create the parent account first. The parent receives the student’s sign-in email, password setup link, and linking code.
                   </p>
                 </div>
               )}

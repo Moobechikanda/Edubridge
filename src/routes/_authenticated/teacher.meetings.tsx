@@ -11,7 +11,7 @@ import { PortalShell } from "../_authenticated";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
-import { ChevronDown, Trash2, Users } from "lucide-react";
+import { ChevronDown, Download, Save, Trash2, Users } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 
 export const Route = createFileRoute("/_authenticated/teacher/meetings")({
@@ -147,7 +147,43 @@ function MeetingRow({
   onDelete: () => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [minutes, setMinutes] = useState(meeting.minutes ?? "");
+  const [conclusions, setConclusions] = useState(meeting.conclusions ?? "");
   const qc = useQueryClient();
+  const saveNotes = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from("meetings")
+        .update({ minutes: minutes.trim() || null, conclusions: conclusions.trim() || null })
+        .eq("id", meeting.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Meeting minutes saved");
+      qc.invalidateQueries({ queryKey: ["teacher-meetings-all"] });
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  function downloadNotes() {
+    const text = [
+      meeting.title,
+      new Date(meeting.scheduled_at).toLocaleString(),
+      meeting.location ? `Location: ${meeting.location}` : "",
+      "",
+      "MINUTES",
+      minutes || "No minutes recorded.",
+      "",
+      "CONCLUSIONS",
+      conclusions || "No conclusions recorded.",
+    ].filter(Boolean).join("\n");
+    const blobUrl = URL.createObjectURL(new Blob([text], { type: "text/plain;charset=utf-8" }));
+    const link = document.createElement("a");
+    link.href = blobUrl;
+    link.download = `${meeting.title.replace(/[^a-z0-9-_]+/gi, "-")}-minutes.txt`;
+    link.click();
+    URL.revokeObjectURL(blobUrl);
+  }
   const { data: attendees = [] } = useQuery({
     queryKey: ["meeting-attendees", meeting.id],
     enabled: open,
@@ -207,6 +243,20 @@ function MeetingRow({
               <Trash2 className="h-4 w-4" />
             </Button>
           )}
+        </div>
+      </div>
+      <div className="mt-4 grid gap-3 border-t pt-4">
+        <div className="space-y-1.5">
+          <Label htmlFor={`minutes-${meeting.id}`}>Meeting minutes</Label>
+          <Textarea id={`minutes-${meeting.id}`} value={minutes} onChange={(event) => setMinutes(event.target.value)} rows={4} maxLength={10000} readOnly={!canDelete} />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor={`conclusions-${meeting.id}`}>Conclusions and actions</Label>
+          <Textarea id={`conclusions-${meeting.id}`} value={conclusions} onChange={(event) => setConclusions(event.target.value)} rows={3} maxLength={5000} readOnly={!canDelete} />
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {canDelete && <Button size="sm" onClick={() => saveNotes.mutate()} disabled={saveNotes.isPending}><Save className="mr-1 h-4 w-4" />Save minutes</Button>}
+          <Button size="sm" variant="outline" onClick={downloadNotes}><Download className="mr-1 h-4 w-4" />Download minutes</Button>
         </div>
       </div>
       {open && (

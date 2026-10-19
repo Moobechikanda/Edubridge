@@ -5,7 +5,6 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 const managedUserInput = z.object({
   email: z.string().email(),
-  password: z.string().min(6),
   fullName: z.string().min(1),
   role: z.enum(["student", "teacher", "parent"]),
   qualifications: z.string().optional(),
@@ -29,10 +28,14 @@ async function sendStudentCodeEmail({
   recipient,
   studentName,
   studentCode,
+  studentEmail,
+  setupLink,
 }: {
   recipient: string;
   studentName: string;
   studentCode: string;
+  studentEmail: string;
+  setupLink: string;
 }) {
   const apiKey = process.env.RESEND_API_KEY;
   const from = process.env.EMAIL_FROM;
@@ -56,12 +59,13 @@ async function sendStudentCodeEmail({
       text: [
         `Hello,`,
         ``,
-        `The EduBridge account for ${studentName} is ready.`,
+      `The EduBridge account for ${studentName} is ready. Student sign-in email: ${studentEmail}`,
+      `Set a password using this secure link: ${setupLink}`,
         `Student code: ${studentCode}`,
         ``,
         `Sign in to the Parent portal, open My children, and enter this code to link the student to your account.`,
       ].join("\n"),
-      html: `<p>Hello,</p><p>The EduBridge account for <strong>${safeStudentName}</strong> is ready.</p><p>Student code: <strong style="font-family:monospace;font-size:1.25rem">${studentCode}</strong></p><p>Sign in to the Parent portal, open <strong>My children</strong>, and enter this code to link the student to your account.</p>`,
+      html: `<p>Hello,</p><p>The EduBridge account for <strong>${safeStudentName}</strong> is ready.</p><p>Student sign-in email: <strong>${escapeHtml(studentEmail)}</strong></p><p><a href="${escapeHtml(setupLink)}">Set the student's password securely</a></p><p>Student code: <strong style="font-family:monospace;font-size:1.25rem">${studentCode}</strong></p><p>Sign in to the Parent portal, open <strong>My children</strong>, and enter this code to link the student to your account.</p>`,
     }),
   });
 
@@ -75,9 +79,35 @@ async function sendStudentCodeEmail({
   }
 }
 
+async function sendAccountSetupEmail({ recipient, name, role, setupLink }: {
+  recipient: string;
+  name: string;
+  role: string;
+  setupLink: string;
+}) {
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.EMAIL_FROM;
+  if (!apiKey || !from) throw new Error("Account email is not configured on the server.");
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      from,
+      to: [recipient],
+      subject: "Set up your EduBridge account",
+      text: `Hello ${name},\n\nYour ${role} account is ready. Set your password using this secure, single-use link:\n${setupLink}\n\nFor your security, EduBridge does not send passwords by email.`,
+      html: `<p>Hello ${escapeHtml(name)},</p><p>Your ${escapeHtml(role)} account is ready.</p><p><a href="${escapeHtml(setupLink)}">Set your EduBridge password</a></p><p>This is a secure setup link. EduBridge does not send passwords by email.</p>`,
+    }),
+  });
+  if (!response.ok) throw new Error(`Account email delivery failed (email provider returned ${response.status}).`);
+}
+
 export const createManagedUser = createServerFn({ method: "POST" })
   .validator(managedUserInput)
   .handler(async ({ data }) => {
+    if (!process.env.RESEND_API_KEY || !process.env.EMAIL_FROM) {
+      throw new Error("Account email is not configured. Set RESEND_API_KEY and EMAIL_FROM as Cloudflare runtime secrets before creating accounts.");
+    }
     const authorization = getRequestHeader("authorization");
     const token = authorization?.replace(/^Bearer\s+/i, "");
     if (!token) throw new Error("Administrator authentication is required");
@@ -127,16 +157,14 @@ export const createManagedUser = createServerFn({ method: "POST" })
 
       parentUserId = parent.id;
 
-      if (!process.env.RESEND_API_KEY || !process.env.EMAIL_FROM) {
-        throw new Error(
-          "Student email delivery is not configured. Set RESEND_API_KEY and EMAIL_FROM on the server before creating the student account.",
-        );
-      }
     }
 
+    const randomPasswordBytes = new Uint8Array(32);
+    crypto.getRandomValues(randomPasswordBytes);
+    const initialPassword = Array.from(randomPasswordBytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
     const { data: created, error: createError } = await supabaseAdmin.auth.admin.createUser({
       email: data.email,
-      password: data.password,
+      password: initialPassword,
       email_confirm: true,
       user_metadata: { full_name: data.fullName },
     });
@@ -193,10 +221,18 @@ export const createManagedUser = createServerFn({ method: "POST" })
 
     if (data.role === "student" && parentUserId && data.parentEmail && studentCode) {
       try {
+        const setup = await supabaseAdmin.auth.admin.generateLink({
+          type: "recovery",
+          email: data.email,
+          options: { redirectTo: `${process.env.APP_URL || "https://edubridge-1dn.pages.dev"}/reset-password` },
+        });
+        if (setup.error || !setup.data.properties.action_link) throw setup.error ?? new Error("Could not create password setup link");
         await sendStudentCodeEmail({
           recipient: data.parentEmail,
           studentName: data.fullName,
           studentCode,
+          studentEmail: data.email,
+          setupLink: setup.data.properties.action_link,
         });
         return {
           id: created.user.id,
@@ -216,5 +252,25 @@ export const createManagedUser = createServerFn({ method: "POST" })
       }
     }
 
-    return { id: created.user.id };
+    try {
+      const setup = await supabaseAdmin.auth.admin.generateLink({
+        type: "recovery",
+        email: data.email,
+        options: { redirectTo: `${process.env.APP_URL || "https://edubridge-1dn.pages.dev"}/reset-password` },
+      });
+      if (setup.error || !setup.data.properties.action_link) throw setup.error ?? new Error("Could not create password setup link");
+      await sendAccountSetupEmail({
+        recipient: data.email,
+        name: data.fullName,
+        role: data.role,
+        setupLink: setup.data.properties.action_link,
+      });
+      return { id: created.user.id, emailSent: true };
+    } catch (error) {
+      return {
+        id: created.user.id,
+        emailSent: false,
+        emailError: error instanceof Error ? error.message : "Account created but setup email could not be sent.",
+      };
+    }
   });

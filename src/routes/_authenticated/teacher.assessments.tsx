@@ -27,6 +27,7 @@ function TeacherAssessments() {
   const { user } = useAuth();
   const qc = useQueryClient();
   const [classId, setClassId] = useState("");
+  const [assessmentType, setAssessmentType] = useState<"test" | "assignment" | "exam">("test");
   const [title, setTitle] = useState("");
   const [coverage, setCoverage] = useState("");
   const [scheduledAt, setScheduledAt] = useState("");
@@ -52,7 +53,7 @@ function TeacherAssessments() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("assessments")
-        .select("id, title, coverage, scheduled_at, points, class_id")
+        .select("id, title, coverage, scheduled_at, points, class_id, assessment_type")
         .order("scheduled_at", { ascending: false });
       if (error) throw error;
       const ids = Array.from(new Set((data ?? []).map((a) => a.class_id)));
@@ -97,6 +98,7 @@ function TeacherAssessments() {
       if (!classId || !title.trim() || !scheduledAt) throw new Error("Class, title, date required");
       const { error } = await supabase.from("assessments").insert({
         class_id: classId,
+        assessment_type: assessmentType,
         title: title.trim(),
         coverage: coverage.trim() || null,
         scheduled_at: new Date(scheduledAt).toISOString(),
@@ -108,6 +110,7 @@ function TeacherAssessments() {
     onSuccess: () => {
       toast.success("Assessment created");
       setTitle("");
+      setAssessmentType("test");
       setCoverage("");
       setScheduledAt("");
       setPoints("100");
@@ -155,6 +158,17 @@ function TeacherAssessments() {
             <Input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={150} />
           </div>
           <div className="space-y-1.5">
+            <Label>Score category</Label>
+            <Select value={assessmentType} onValueChange={(v) => setAssessmentType(v as typeof assessmentType)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="test">Test</SelectItem>
+                <SelectItem value="assignment">Assignment</SelectItem>
+                <SelectItem value="exam">Exam</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
             <Label>Coverage / syllabus</Label>
             <Textarea
               value={coverage}
@@ -200,7 +214,7 @@ function TeacherAssessments() {
                   <div className="min-w-0 flex-1">
                     <div className="font-semibold">{a.title}</div>
                     <div className="text-xs text-muted-foreground mt-1">
-                      {a.class_name} · {new Date(a.scheduled_at).toLocaleString()} · {a.points} pts
+                      {a.class_name} · {a.assessment_type} · {new Date(a.scheduled_at).toLocaleString()} · {a.points} pts
                     </div>
                     <div className="flex flex-wrap gap-1.5 mt-2">
                       <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">

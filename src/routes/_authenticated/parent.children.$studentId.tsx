@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PortalShell } from "../_authenticated";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { ArrowLeft, Contact2, RotateCw } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/parent/children/$studentId")({
@@ -74,7 +75,7 @@ function ChildProgress() {
     queryFn: async () => {
       const { data: assessmentRows, error: assessmentError } = await supabase
         .from("assessments")
-        .select("id, title, points, scheduled_at, class_id")
+        .select("id, title, points, scheduled_at, class_id, assessment_type")
         .in("class_id", classIds)
         .order("scheduled_at", { ascending: false });
       if (assessmentError) throw assessmentError;
@@ -149,6 +150,30 @@ function ChildProgress() {
     ? graded.reduce((sum, a) => sum + (Number(a.submission!.grade) / a.points) * 100, 0) /
       graded.length
     : null;
+
+  const { data: reportCards = [], isLoading: reportsLoading, isError: reportsError } = useQuery({
+    queryKey: ["parent-child-report-cards", studentId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("report_cards")
+        .select("id, title, term, file_path, created_at")
+        .eq("student_id", studentId)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  async function downloadReportCard(filePath: string, title: string) {
+    const { data, error } = await supabase.storage
+      .from("report-cards")
+      .createSignedUrl(filePath, 60, { download: `${title}.pdf` });
+    if (error) {
+      toast.error(`Could not download report card: ${error.message}`);
+      return;
+    }
+    window.location.assign(data.signedUrl);
+  }
 
   return (
     <PortalShell
@@ -312,6 +337,7 @@ function ChildProgress() {
                     <div>
                       <div className="font-medium">{assessment.title}</div>
                       <div className="mt-1 text-sm text-muted-foreground">
+                        <span className="capitalize">{assessment.assessment_type}</span>{" · "}
                         {assessmentClass?.subject || assessmentClass?.name || "Class"}
                         {assessmentClass?.subject && assessmentClass?.name
                           ? ` · ${assessmentClass.name}`
@@ -336,6 +362,33 @@ function ChildProgress() {
                 </li>
               );
             })}
+          </ul>
+        )}
+      </Card>
+
+      <Card className="p-6 mb-6">
+        <h2 className="font-semibold mb-4">Report cards</h2>
+        {reportsLoading ? (
+          <p className="text-sm text-muted-foreground">Loading report cards…</p>
+        ) : reportsError ? (
+          <p className="text-sm text-destructive">Could not load report cards.</p>
+        ) : reportCards.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No report cards have been uploaded yet.</p>
+        ) : (
+          <ul className="divide-y">
+            {reportCards.map((report) => (
+              <li key={report.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
+                <div>
+                  <p className="font-medium">{report.title}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {report.term ? `${report.term} · ` : ""}{new Date(report.created_at).toLocaleDateString()}
+                  </p>
+                </div>
+                <Button size="sm" variant="outline" onClick={() => downloadReportCard(report.file_path, report.title)}>
+                  Download PDF
+                </Button>
+              </li>
+            ))}
           </ul>
         )}
       </Card>

@@ -11,6 +11,7 @@ function ParentLayout() {
   const tabs = [
     { to: "/parent", label: "Overview" },
     { to: "/parent/children", label: "Children" },
+    { to: "/parent/meetings", label: "Meeting minutes" },
     { to: "/parent/fees", label: "Fees" },
     { to: "/parent/announcements", label: "Announcements" },
   ];

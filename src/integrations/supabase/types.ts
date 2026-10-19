@@ -121,6 +121,7 @@ export type Database = {
       };
       assessments: {
         Row: {
+          assessment_type: string;
           class_id: string;
           coverage: string | null;
           created_at: string;
@@ -131,6 +132,7 @@ export type Database = {
           title: string;
         };
         Insert: {
+          assessment_type?: string;
           class_id: string;
           coverage?: string | null;
           created_at?: string;
@@ -141,6 +143,7 @@ export type Database = {
           title: string;
         };
         Update: {
+          assessment_type?: string;
           class_id?: string;
           coverage?: string | null;
           created_at?: string;
@@ -333,29 +336,68 @@ export type Database = {
         Row: {
           created_at: string;
           created_by: string;
+          conclusions: string | null;
           description: string | null;
           id: string;
           location: string | null;
+          minutes: string | null;
           scheduled_at: string;
           title: string;
         };
         Insert: {
           created_at?: string;
           created_by: string;
+          conclusions?: string | null;
           description?: string | null;
           id?: string;
           location?: string | null;
+          minutes?: string | null;
           scheduled_at: string;
           title: string;
         };
         Update: {
           created_at?: string;
           created_by?: string;
+          conclusions?: string | null;
           description?: string | null;
           id?: string;
           location?: string | null;
+          minutes?: string | null;
           scheduled_at?: string;
           title?: string;
+        };
+        Relationships: [];
+      };
+      report_cards: {
+        Row: {
+          class_id: string;
+          created_at: string;
+          file_path: string;
+          id: string;
+          student_id: string;
+          term: string | null;
+          title: string;
+          uploaded_by: string;
+        };
+        Insert: {
+          class_id: string;
+          created_at?: string;
+          file_path: string;
+          id?: string;
+          student_id: string;
+          term?: string | null;
+          title: string;
+          uploaded_by: string;
+        };
+        Update: {
+          class_id?: string;
+          created_at?: string;
+          file_path?: string;
+          id?: string;
+          student_id?: string;
+          term?: string | null;
+          title?: string;
+          uploaded_by?: string;
         };
         Relationships: [];
       };

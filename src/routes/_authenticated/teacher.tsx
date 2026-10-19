@@ -6,6 +6,7 @@ import {
   CalendarClock,
   Megaphone,
   CalendarDays,
+  FileText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { RoleGuard } from "@/components/RoleGuard";
@@ -20,6 +21,7 @@ function TeacherLayout() {
     { to: "/teacher", label: "Overview", icon: LayoutDashboard, exact: true },
     { to: "/teacher/classes", label: "Classes", icon: BookOpen, exact: false },
     { to: "/teacher/assessments", label: "Assessments", icon: ClipboardList, exact: false },
+    { to: "/teacher/reports", label: "Report cards", icon: FileText, exact: false },
     { to: "/teacher/meetings", label: "Meetings", icon: CalendarClock, exact: false },
     { to: "/teacher/announcements", label: "Announcements", icon: Megaphone, exact: false },
     { to: "/teacher/events", label: "Events", icon: CalendarDays, exact: false },
