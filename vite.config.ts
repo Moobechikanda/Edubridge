@@ -5,17 +5,49 @@
 //     sandbox detection (port/host/strictPort).
 // You can pass additional config via defineConfig({ vite: { ... } }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
+import { readFileSync } from "node:fs";
 import { loadEnv } from "vite";
+
+// Public Supabase settings are already checked into wrangler.jsonc for the
+// Cloudflare runtime. Vite also needs them at build time because browser code
+// cannot read Worker runtime bindings. Keep explicit VITE_* build variables as
+// the override when a deployment provides them.
+const cloudflareConfig = JSON.parse(
+  readFileSync(new URL("./wrangler.jsonc", import.meta.url), "utf8"),
+) as {
+  vars?: {
+    SUPABASE_URL?: string;
+    SUPABASE_PUBLISHABLE_KEY?: string;
+  };
+};
 
 const adminSignInUrlLogger = {
   name: "edubridge-local-urls",
   config(_config: object, { command, mode }: { command: string; mode: string }) {
-    if (command !== "serve") return;
-
     const env = loadEnv(mode, process.cwd(), "");
-    for (const key of ["SUPABASE_URL", "SUPABASE_PUBLISHABLE_KEY", "SUPABASE_SERVICE_ROLE_KEY"]) {
-      if (!process.env[key] && env[key]) process.env[key] = env[key];
+
+    if (command === "serve") {
+      for (const key of [
+        "SUPABASE_URL",
+        "SUPABASE_PUBLISHABLE_KEY",
+        "SUPABASE_SERVICE_ROLE_KEY",
+      ]) {
+        if (!process.env[key] && env[key]) process.env[key] = env[key];
+      }
     }
+
+    return {
+      define: {
+        "import.meta.env.VITE_SUPABASE_URL": JSON.stringify(
+          env.VITE_SUPABASE_URL || cloudflareConfig.vars?.SUPABASE_URL || "",
+        ),
+        "import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY": JSON.stringify(
+          env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+            cloudflareConfig.vars?.SUPABASE_PUBLISHABLE_KEY ||
+            "",
+        ),
+      },
+    };
   },
   configureServer(server: import("vite").ViteDevServer) {
     const printLocalUrls = () => {
