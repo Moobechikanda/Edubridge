@@ -31,6 +31,9 @@ const adminSignInUrlLogger = {
         "SUPABASE_URL",
         "SUPABASE_PUBLISHABLE_KEY",
         "SUPABASE_SERVICE_ROLE_KEY",
+        "RESEND_API_KEY",
+        "EMAIL_FROM",
+        "APP_URL",
       ]) {
         if (!process.env[key] && env[key]) process.env[key] = env[key];
       }
