@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { BookOpen, Plus } from "lucide-react";
@@ -31,6 +31,15 @@ function AdminClasses() {
   const [name, setName] = useState("");
   const [subject, setSubject] = useState("");
   const [teacherId, setTeacherId] = useState("");
+
+  const { data: subjects = [], isLoading: subjectsLoading, isError: subjectsError } = useQuery({
+    queryKey: ["admin-subjects"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("subjects").select("id, name").order("name");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
 
   const { data: teachers = [] } = useQuery({
     queryKey: ["admin-teachers"],
@@ -106,12 +115,19 @@ function AdminClasses() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="class-subject">Subject</Label>
-            <Input
-              id="class-subject"
-              value={subject}
-              onChange={(event) => setSubject(event.target.value)}
-              placeholder="Mathematics"
-            />
+            <Select value={subject} onValueChange={setSubject} disabled={subjectsLoading || subjectsError || subjects.length === 0}>
+              <SelectTrigger id="class-subject">
+                <SelectValue placeholder={subjectsLoading ? "Loading subjects…" : "Choose a subject"} />
+              </SelectTrigger>
+              <SelectContent>
+                {subjects.map((item) => <SelectItem key={item.id} value={item.name}>{item.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            {subjectsError ? (
+              <p className="text-sm text-destructive">Could not load subjects. Refresh and try again.</p>
+            ) : subjects.length === 0 && !subjectsLoading ? (
+              <p className="text-sm text-muted-foreground">Add subjects in <Link className="text-primary underline" to="/admin/subjects">Subjects</Link> first.</p>
+            ) : null}
           </div>
           <div className="space-y-2">
             <Label>Teacher</Label>
@@ -132,7 +148,7 @@ function AdminClasses() {
           <Button
             className="w-full"
             onClick={() => createClass.mutate()}
-            disabled={createClass.isPending}
+            disabled={createClass.isPending || !subject}
           >
             {createClass.isPending ? "Creating…" : "Create class"}
           </Button>

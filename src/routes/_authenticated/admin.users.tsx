@@ -35,7 +35,24 @@ export const Route = createFileRoute("/_authenticated/admin/users")({
       <AdminUsers />
     </RoleGuard>
   ),
+  errorComponent: AdminUsersRouteError,
 });
+
+function AdminUsersRouteError({ error, reset }: { error: Error; reset: () => void }) {
+  return (
+    <PortalShell title="User management" subtitle="The user management page hit an error.">
+      <Card className="max-w-2xl p-6" role="alert">
+        <p className="font-medium text-destructive">Could not open user management.</p>
+        <p className="mt-2 text-sm text-muted-foreground">Reload this page. If it happens again, share the error details with support.</p>
+        <details className="mt-3 text-sm">
+          <summary className="cursor-pointer font-medium">Error details</summary>
+          <pre className="mt-2 whitespace-pre-wrap break-words rounded bg-muted p-3 text-xs">{error.message}</pre>
+        </details>
+        <Button className="mt-4" onClick={reset}>Reload user management</Button>
+      </Card>
+    </PortalShell>
+  );
+}
 
 const ROLES: AppRole[] = ["student", "teacher", "parent", "admin"];
 
@@ -50,16 +67,26 @@ function AdminUsers() {
   const [parentEmail, setParentEmail] = useState("");
   const [role, setRole] = useState<AppRole>("student");
 
-  const { data: users = [], isLoading } = useQuery({
+  const {
+    data: users = [],
+    isLoading,
+    isError: usersError,
+    error: usersQueryError,
+    refetch: refetchUsers,
+  } = useQuery({
     queryKey: ["admin-users"],
     queryFn: async () => {
-      const [{ data: profs }, { data: roles }] = await Promise.all([
+      const [profilesResult, rolesResult] = await Promise.all([
         supabase
           .from("profiles")
           .select("id, full_name, parent_code, student_code, teacher_qualifications, created_at")
           .order("created_at", { ascending: false }),
         supabase.from("user_roles").select("user_id, role"),
       ]);
+      if (profilesResult.error) throw new Error(`Could not load profiles: ${profilesResult.error.message}`);
+      if (rolesResult.error) throw new Error(`Could not load user roles: ${rolesResult.error.message}`);
+      const profs = profilesResult.data;
+      const roles = rolesResult.data;
       const roleMap = new Map((roles ?? []).map((r) => [r.user_id, r.role as AppRole]));
       return (profs ?? []).map((p) => ({ ...p, role: roleMap.get(p.id) ?? null }));
     },
@@ -232,7 +259,13 @@ function AdminUsers() {
       </div>
 
       <Card className="p-0 overflow-hidden">
-        {isLoading ? (
+        {usersError ? (
+          <div className="p-6" role="alert">
+            <p className="font-medium text-destructive">User list could not be loaded.</p>
+            <p className="mt-1 text-sm text-muted-foreground">{usersQueryError instanceof Error ? usersQueryError.message : "Check your connection and administrator access."}</p>
+            <Button className="mt-3" size="sm" variant="outline" onClick={() => refetchUsers()}>Try again</Button>
+          </div>
+        ) : isLoading ? (
           <p className="p-6 text-sm text-muted-foreground">Loading…</p>
         ) : filtered.length === 0 ? (
           <p className="p-6 text-sm text-muted-foreground">No users found.</p>

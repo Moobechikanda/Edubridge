@@ -123,6 +123,14 @@ function ClassFormDialog({ initial, onClose }: { initial: ClassRow | null; onClo
   const [subject, setSubject] = useState(initial?.subject ?? "");
   const [gradeLevel, setGradeLevel] = useState(initial?.grade_level?.toString() ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
+  const { data: subjects = [] } = useQuery({
+    queryKey: ["teacher-available-subjects"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("subjects").select("id, name").order("name");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
 
   const save = useMutation({
     mutationFn: async () => {
@@ -163,12 +171,12 @@ function ClassFormDialog({ initial, onClose }: { initial: ClassRow | null; onClo
         </div>
         <div className="space-y-2">
           <Label htmlFor="subject">Subject</Label>
-          <Input
-            id="subject"
-            value={subject}
-            onChange={(e) => setSubject(e.target.value)}
-            maxLength={100}
-          />
+          <Select value={subject} onValueChange={setSubject}>
+            <SelectTrigger id="subject"><SelectValue placeholder="Choose a subject" /></SelectTrigger>
+            <SelectContent>
+              {subjects.map((item) => <SelectItem key={item.id} value={item.name}>{item.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
         <div className="space-y-2">
           <Label>Grade</Label>
